@@ -1,0 +1,153 @@
+import {
+  INITIAL_USER,
+  INITIAL_ORDERS,
+  INITIAL_WITHDRAWALS,
+  INITIAL_ADMIN_SESSIONS,
+  LEADERBOARD_DATA
+} from "./mockData";
+
+const KEYS = {
+  USER: "chuot_user",
+  ORDERS: "chuot_orders",
+  WITHDRAWALS: "chuot_withdrawals",
+  ADMIN_SESSIONS: "chuot_admin_sessions",
+  CONVERTED_LINKS: "chuot_converted_links"
+};
+
+export const getStoredUser = () => {
+  const data = localStorage.getItem(KEYS.USER);
+  if (!data) {
+    localStorage.setItem(KEYS.USER, JSON.stringify(INITIAL_USER));
+    return INITIAL_USER;
+  }
+  return JSON.parse(data);
+};
+
+export const updateStoredUser = (updatedFields) => {
+  const current = getStoredUser();
+  const newUser = { ...current, ...updatedFields };
+  localStorage.setItem(KEYS.USER, JSON.stringify(newUser));
+  return newUser;
+};
+
+export const getStoredOrders = () => {
+  const data = localStorage.getItem(KEYS.ORDERS);
+  if (!data) {
+    localStorage.setItem(KEYS.ORDERS, JSON.stringify(INITIAL_ORDERS));
+    return INITIAL_ORDERS;
+  }
+  return JSON.parse(data);
+};
+
+export const addStoredOrder = (newOrder) => {
+  const orders = getStoredOrders();
+  const updated = [newOrder, ...orders];
+  localStorage.setItem(KEYS.ORDERS, JSON.stringify(updated));
+  return updated;
+};
+
+export const getStoredWithdrawals = () => {
+  const data = localStorage.getItem(KEYS.WITHDRAWALS);
+  if (!data) {
+    localStorage.setItem(KEYS.WITHDRAWALS, JSON.stringify(INITIAL_WITHDRAWALS));
+    return INITIAL_WITHDRAWALS;
+  }
+  return JSON.parse(data);
+};
+
+export const createWithdrawalRequest = (amount, bankInfo) => {
+  const user = getStoredUser();
+  if (user.balance < amount) {
+    throw new Error("Số dư không đủ để thực hiện giao dịch này");
+  }
+
+  const newWithdrawal = {
+    id: `WDR-${Math.floor(100000 + Math.random() * 900000)}`,
+    date: new Date().toLocaleString("vi-VN"),
+    amount,
+    bankName: bankInfo.bankName,
+    accountNumber: bankInfo.accountNumber,
+    accountName: bankInfo.accountName,
+    status: "pending",
+    transactionCode: `SEPAY-WDR${Math.floor(100000 + Math.random() * 900000)}`
+  };
+
+  const withdrawals = getStoredWithdrawals();
+  const updatedWithdrawals = [newWithdrawal, ...withdrawals];
+  localStorage.setItem(KEYS.WITHDRAWALS, JSON.stringify(updatedWithdrawals));
+
+  // Deduct balance
+  updateStoredUser({ balance: user.balance - amount });
+
+  return newWithdrawal;
+};
+
+export const getAdminSessions = () => {
+  const data = localStorage.getItem(KEYS.ADMIN_SESSIONS);
+  if (!data) {
+    localStorage.setItem(KEYS.ADMIN_SESSIONS, JSON.stringify(INITIAL_ADMIN_SESSIONS));
+    return INITIAL_ADMIN_SESSIONS;
+  }
+  return JSON.parse(data);
+};
+
+export const saveAdminSession = (session) => {
+  const sessions = getAdminSessions();
+  const idx = sessions.findIndex(s => s.id === session.id);
+  let updated;
+  if (idx >= 0) {
+    updated = [...sessions];
+    updated[idx] = session;
+  } else {
+    updated = [session, ...sessions];
+  }
+  localStorage.setItem(KEYS.ADMIN_SESSIONS, JSON.stringify(updated));
+  return updated;
+};
+
+export const convertProductLink = (inputUrl) => {
+  const user = getStoredUser();
+  let platform = "shopee";
+  let platformName = "Shopee VN";
+
+  const lower = inputUrl.toLowerCase();
+  if (lower.includes("tiktok") || lower.includes("vt.tiktok")) {
+    platform = "tiktok";
+    platformName = "TikTok Shop";
+  } else if (lower.includes("lazada")) {
+    platform = "lazada";
+    platformName = "Lazada VN";
+  } else if (lower.includes("shopeefood") || lower.includes("now.vn")) {
+    platform = "shopee-food";
+    platformName = "ShopeeFood";
+  }
+
+  // Generate affiliate sub_id link
+  const randomHash = Math.random().toString(36).substring(2, 9);
+  const subId = user.id;
+  const affiliateUrl = `https://${platform === 'shopee' ? 'shope.ee' : platform === 'tiktok' ? 'vt.tiktok.com' : 's.lazada.vn'}/${randomHash}?sub_id=${subId}`;
+
+  // Estimate cashback (sample math)
+  const estimatedPrice = 250000;
+  const estCommissionRate = platform === "shopee" ? 10 : platform === "tiktok" ? 15 : 12;
+  const estTotalComm = (estimatedPrice * estCommissionRate) / 100;
+  const estUserCashback = estTotalComm * 0.8; // 80% to user
+
+  const record = {
+    id: `CONV-${Date.now()}`,
+    originalUrl: inputUrl,
+    affiliateUrl,
+    platform,
+    platformName,
+    subId,
+    estimatedCashback: estUserCashback,
+    createdAt: new Date().toLocaleString("vi-VN")
+  };
+
+  const history = JSON.parse(localStorage.getItem(KEYS.CONVERTED_LINKS) || "[]");
+  localStorage.setItem(KEYS.CONVERTED_LINKS, JSON.stringify([record, ...history.slice(0, 19)]));
+
+  return record;
+};
+
+export const getLeaderboard = () => LEADERBOARD_DATA;
