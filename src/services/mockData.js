@@ -4,6 +4,7 @@ export const INITIAL_USER = {
   id: "USR-982341",
   name: "Nguyễn Văn Hùng",
   email: "vanhung.demo@gmail.com",
+  role: "user", // "user" or "admin"
   avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
   balance: 450000,
   pendingBalance: 185000,
@@ -19,6 +20,7 @@ export const INITIAL_USER = {
   referralsCount: 14,
   referralEarnings: 320000
 };
+
 
 export const INITIAL_ORDERS = [
   {

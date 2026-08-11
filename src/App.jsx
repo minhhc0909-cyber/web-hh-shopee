@@ -18,6 +18,8 @@ import AdminReconciliation from './pages/Admin/AdminReconciliation';
 import AdminOrders from './pages/Admin/AdminOrders';
 import AdminWithdrawals from './pages/Admin/AdminWithdrawals';
 
+import ProtectedRoute from './components/ProtectedRoute';
+
 export default function App() {
   const [isAdminMode, setIsAdminMode] = useState(false);
 
@@ -38,17 +40,38 @@ export default function App() {
           <Route path="/referral" element={<Referral />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
 
-          {/* Admin Routes */}
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/shopee-session" element={<AdminShopeeSession />} />
-          <Route path="/admin/reconciliation" element={<AdminReconciliation />} />
-          <Route path="/admin/orders" element={<AdminOrders />} />
-          <Route path="/admin/withdrawals" element={<AdminWithdrawals />} />
+          {/* Admin Routes - Protected by ProtectedRoute */}
+          <Route path="/admin" element={
+            <ProtectedRoute isAdminMode={isAdminMode} requiredRole="admin">
+              <AdminDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/shopee-session" element={
+            <ProtectedRoute isAdminMode={isAdminMode} requiredRole="admin">
+              <AdminShopeeSession />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/reconciliation" element={
+            <ProtectedRoute isAdminMode={isAdminMode} requiredRole="admin">
+              <AdminReconciliation />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/orders" element={
+            <ProtectedRoute isAdminMode={isAdminMode} requiredRole="admin">
+              <AdminOrders />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/withdrawals" element={
+            <ProtectedRoute isAdminMode={isAdminMode} requiredRole="admin">
+              <AdminWithdrawals />
+            </ProtectedRoute>
+          } />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+
 
       {/* Footer */}
       <Footer />
