@@ -97,3 +97,6 @@ app.listen(PORT, () => {
   console.log(`[Chuột Hoàn Tiền] Express Backend Engine is running on http://localhost:${PORT}`);
 });
 
+export default app;
+
+
