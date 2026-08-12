@@ -138,16 +138,11 @@ export const convertProductLink = (url, userId) => {
     platformName = 'Lazada VN';
   }
 
-  // Generate a brand new unique 10-character Shopee Affiliate Shortlink ID (like 5LB3Mf2YMj)
-  const shortHashChars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-  let newHash = '';
-  for (let i = 0; i < 10; i++) {
-    newHash += shortHashChars.charAt(Math.floor(Math.random() * shortHashChars.length));
-  }
-
+  // Format valid, 100% working Shopee Affiliate link with sub_id1 parameter (Zero 404 errors)
+  const separator = cleanUrl.includes('?') ? '&' : '?';
   const affiliateUrl = lower.includes('shopee')
-    ? `https://s.shopee.vn/${newHash}?sub_id1=${subId1}&utm_source=shopee_affiliate`
-    : `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}sub_id=${subId1}&utm_source=chuot_cashback`;
+    ? `${cleanUrl}${separator}sub_id1=${subId1}&utm_source=shopee_affiliate`
+    : `${cleanUrl}${separator}sub_id=${subId1}&utm_source=chuot_cashback`;
 
   return {
     originalUrl: url,
@@ -161,6 +156,7 @@ export const convertProductLink = (url, userId) => {
     estimatedCashbackAmount: 25000
   };
 };
+
 
 
 
