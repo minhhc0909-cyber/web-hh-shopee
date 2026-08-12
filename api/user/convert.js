@@ -21,10 +21,13 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { url, userId } = req.body || {};
+    const { url, userId, price } = req.body || {};
     if (!url) {
       return res.status(400).json({ error: 'URL không hợp lệ' });
     }
+
+    const itemPrice = Number(price) > 0 ? Number(price) : 150000;
+
 
     let cleanUrl = url.trim();
     if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
@@ -99,11 +102,11 @@ export default async function handler(req, res) {
 
 
     // Precise Shopee Commission Estimation Formula: 10% capped at 20,000 VND + Shop Extra (5%) -> 40% actual user cashback
-    const samplePrice = 150000;
-    const shopeeCommission = Math.min(samplePrice * 0.10, 20000); // 10% capped at 20,000 VND
-    const shopCommission = samplePrice * 0.05; // 5% Shop Extra
+    const shopeeCommission = Math.min(itemPrice * 0.10, 20000); // 10% capped at 20,000 VND
+    const shopCommission = itemPrice * 0.05; // 5% Shop Extra
     const totalCommission = shopeeCommission + shopCommission;
     const estimatedCashback = Math.round(totalCommission * 0.40); // Actual 40% cashback
+
 
     return res.status(200).json({
       originalUrl: url,

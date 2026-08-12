@@ -16,6 +16,7 @@ import { convertProductLink, getStoredUser } from '../services/storage';
 
 export default function LinkConverter() {
   const [url, setUrl] = useState('');
+  const [productPrice, setProductPrice] = useState('');
   const [detectedPlatform, setDetectedPlatform] = useState(null);
   const [result, setResult] = useState(null);
   const [copied, setCopied] = useState(false);
@@ -57,12 +58,13 @@ export default function LinkConverter() {
 
     setIsConverting(true);
     const userId = user?.id || 'USR-888999';
+    const parsedPrice = Number(productPrice.replace(/[^0-9]/g, '')) || 0;
 
     try {
       const res = await fetch('/api/user/convert', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: url.trim(), userId })
+        body: JSON.stringify({ url: url.trim(), userId, price: parsedPrice })
       });
 
       if (res.ok) {
@@ -78,10 +80,11 @@ export default function LinkConverter() {
     }
 
     // Fallback if backend server is unreachable
-    const converted = convertProductLink(url.trim(), userId);
+    const converted = convertProductLink(url.trim(), userId, parsedPrice);
     setResult(converted);
     setIsConverting(false);
   };
+
 
 
   const handleCopyLink = () => {
@@ -173,8 +176,25 @@ export default function LinkConverter() {
             </button>
 
           </div>
+
+          {/* Optional Price Input for 100% Exact Cashback Calculation */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <span className="text-xs font-bold text-gray-600 whitespace-nowrap">Giá sản phẩm (VNĐ):</span>
+              <input
+                type="text"
+                value={productPrice}
+                onChange={(e) => setProductPrice(e.target.value)}
+                placeholder="Ví dụ: 36.000 (Để tính hoàn tiền chính xác)"
+                className="w-full sm:w-64 bg-gray-50 border border-gray-200 focus:bg-white focus:border-orange-500 rounded-lg px-3 py-1.5 text-xs font-mono text-gray-900 outline-none transition-all"
+              />
+            </div>
+            <span className="text-[11px] text-gray-400">Công thức: Shopee 10% (tối đa 20k) + Shop 5% ➔ Hoàn 40% cho khách</span>
+          </div>
+
         </div>
       </form>
+
 
       {/* Conversion Result Box */}
       {result && (
