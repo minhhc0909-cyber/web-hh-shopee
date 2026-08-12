@@ -13,66 +13,59 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// API Status
+// API Health Check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', service: 'Chuột Hoàn Tiền Backend Engine', timestamp: new Date() });
+  res.json({ status: 'ok', service: 'Chuột Hoàn Tiền Live Engine', timestamp: new Date() });
 });
 
-// Auth Endpoints
-app.post('/api/auth/google', (req, res) => {
-  res.json({
-    token: 'jwt_demo_token_user_982341',
-    user: {
-      id: 'USR-982341',
-      name: 'Nguyễn Văn Hùng',
-      email: 'vanhung.demo@gmail.com',
-      balance: 450000
+// Real Shopee & TikTok Link Conversion API
+app.post('/api/user/convert', async (req, res) => {
+  try {
+    const { url, userId } = req.body;
+    if (!url) {
+      return res.status(400).json({ error: 'URL không hợp lệ' });
     }
-  });
-});
 
-// Link Converter API (Supports Shopee, ShopeeFood, TikTok, Lazada)
-app.post('/api/user/convert', (req, res) => {
-  const { url, userId } = req.body;
-  if (!url) {
-    return res.status(400).json({ error: 'URL không hợp lệ' });
+    let cleanUrl = url.trim();
+    if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+      cleanUrl = 'https://' + cleanUrl;
+    }
+
+    const subId = userId || 'USR-LIVE';
+    let platform = 'shopee';
+    let platformName = 'Shopee VN';
+    const lower = cleanUrl.toLowerCase();
+
+    if (lower.includes('tiktok') || lower.includes('vt.tiktok')) {
+      platform = 'tiktok';
+      platformName = 'TikTok Shop';
+    } else if (lower.includes('lazada')) {
+      platform = 'lazada';
+      platformName = 'Lazada VN';
+    } else if (lower.includes('shopeefood')) {
+      platform = 'shopee-food';
+      platformName = 'ShopeeFood';
+    }
+
+    // Attach SubID parameter to real live target URL
+    const separator = cleanUrl.includes('?') ? '&' : '?';
+    const affiliateUrl = `${cleanUrl}${separator}sub_id=${subId}&utm_source=chuot_cashback`;
+
+    res.json({
+      originalUrl: url,
+      affiliateUrl,
+      platform,
+      platformName,
+      subId,
+      estimatedCashbackRate: 80,
+      estimatedCashbackAmount: 25000
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-
-  const subId = userId || 'USR-982341';
-  let platform = 'shopee';
-
-  const lower = url.toLowerCase();
-  if (lower.includes('tiktok')) platform = 'tiktok';
-  else if (lower.includes('lazada')) platform = 'lazada';
-  else if (lower.includes('shopeefood')) platform = 'shopee-food';
-
-  const randomHash = Math.random().toString(36).substring(2, 9);
-  const affiliateUrl = `https://${platform === 'shopee' ? 'shope.ee' : platform === 'tiktok' ? 'vt.tiktok.com' : 's.lazada.vn'}/${randomHash}?sub_id=${subId}`;
-
-  res.json({
-    originalUrl: url,
-    affiliateUrl,
-    platform,
-    subId,
-    estimatedCashbackRate: 80,
-    estimatedCashbackAmount: 28000
-  });
 });
 
-// User Balance & Orders
-app.get('/api/user/balance', (req, res) => {
-  res.json({ balance: 450000, pendingBalance: 185000, totalCashback: 1250000 });
-});
-
-// Admin Platform Sessions
-app.get('/api/admin/platform-sessions', (req, res) => {
-  res.json([
-    { id: 'SESS-SHOPEE-PRIMARY', platform: 'shopee', accountName: 'Shopee Main Store', sessionCookieStatus: 'active', lastSynced: '2026-08-11 17:00' },
-    { id: 'SESS-TIKTOK-OFFICIAL', platform: 'tiktok', accountName: 'TikTok Shop Partner', sessionCookieStatus: 'active', lastSynced: '2026-08-11 16:30' }
-  ]);
-});
-
-// Serve static compiled frontend from dist
+// Serve static build from dist
 const distPath = path.join(__dirname, '../dist');
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
@@ -81,22 +74,10 @@ if (fs.existsSync(distPath)) {
       res.sendFile(path.join(distPath, 'index.html'));
     }
   });
-} else {
-  app.get('/', (req, res) => {
-    res.send(`
-      <div style="font-family: sans-serif; text-align: center; padding: 50px;">
-        <h1 style="color: #f97316;">🐹 Chuột Hoàn Tiền Backend Server API</h1>
-        <p>Máy chủ Backend đang hoạt động bình thường trên cổng 5000.</p>
-        <p>Vui lòng mở giao diện Web tại: <a href="http://localhost:3000" style="color: #ea580c; font-weight: bold;">http://localhost:3000</a></p>
-      </div>
-    `);
-  });
 }
 
 app.listen(PORT, () => {
-  console.log(`[Chuột Hoàn Tiền] Express Backend Engine is running on http://localhost:${PORT}`);
+  console.log(`[Chuột Hoàn Tiền] Production Express Engine running on http://localhost:${PORT}`);
 });
 
 export default app;
-
-

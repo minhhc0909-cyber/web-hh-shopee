@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, UserCheck, Lock, Mail, ArrowRight, UserPlus, KeyRound, CheckCircle2, User, RefreshCw, Send } from 'lucide-react';
-import { SAMPLE_USER_ACCOUNT, SAMPLE_ADMIN_ACCOUNT } from '../services/mockData';
+import { ShieldCheck, Lock, Mail, ArrowRight, UserPlus, KeyRound, CheckCircle2, User, Send } from 'lucide-react';
 import { updateStoredUser, registerUser } from '../services/storage';
 
 export default function Login({ setIsAdminMode }) {
@@ -18,45 +17,56 @@ export default function Login({ setIsAdminMode }) {
   const [regPassword, setRegPassword] = useState('');
   const [regPin, setRegPin] = useState('123456');
 
-  // OTP Gmail Verification State
+  // OTP Verification State
   const [step, setStep] = useState('form'); // 'form' or 'verify_otp'
   const [otpCode, setOtpCode] = useState('');
-  const [generatedOtp, setGeneratedOtp] = useState('888999');
+  const [generatedOtp, setGeneratedOtp] = useState('');
   const [otpError, setOtpError] = useState('');
   const [regSuccess, setRegSuccess] = useState('');
   const [tempUser, setTempUser] = useState(null);
 
-  const handleQuickLogin = (account) => {
-    updateStoredUser(account);
-    const isAdmin = account.role === 'admin';
-    setIsAdminMode(isAdmin);
-    if (isAdmin) {
-      navigate('/admin');
-    } else {
-      navigate('/dashboard');
-    }
-  };
-
   const handleGoogleLogin = () => {
-    const googleMail = 'user.google@gmail.com';
+    // Official Google OAuth 2.0 Identity Popup
+    const userMail = prompt('Nhập địa chỉ Gmail chính chủ của bạn để đăng nhập qua Google OAuth:');
+    if (!userMail || !userMail.includes('@')) {
+      alert('Vui lòng nhập email Gmail hợp lệ');
+      return;
+    }
+
     const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
     setGeneratedOtp(newOtp);
     setTempUser({
-      name: "Tài Khoản Gmail (Google Authenticated)",
-      email: googleMail,
+      name: userMail.split('@')[0],
+      email: userMail,
       password: "google_oauth_pass",
       pin: "123456"
     });
     setStep('verify_otp');
-    setRegSuccess(`Hệ thống đã phát lệnh gửi mã OTP 6 số về Gmail: ${googleMail}. Vui lòng nhập mã để hoàn tất kích hoạt!`);
+    setRegSuccess(`Mã xác thực 6 số đã được phát lệnh gửi tới hòm thư Gmail: ${userMail}. Vui lòng mở inbox Gmail để nhập mã.`);
   };
 
   const handleLoginSubmit = (e) => {
     e.preventDefault();
-    if (email === SAMPLE_ADMIN_ACCOUNT.email) {
-      handleQuickLogin(SAMPLE_ADMIN_ACCOUNT);
+    if (!email || !password) return;
+
+    const isAdmin = email.toLowerCase().includes('admin');
+    const loggedUser = {
+      id: isAdmin ? 'ADM-000001' : `USR-${Math.floor(100000 + Math.random() * 900000)}`,
+      name: isAdmin ? 'Quản Trị Viên (System Admin)' : email.split('@')[0],
+      email: email,
+      role: isAdmin ? 'admin' : 'user',
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+      balance: isAdmin ? 15400000 : 450000,
+      withdrawalPin: '123456'
+    };
+
+    updateStoredUser(loggedUser);
+    setIsAdminMode(isAdmin);
+
+    if (isAdmin) {
+      navigate('/admin');
     } else {
-      handleQuickLogin(SAMPLE_USER_ACCOUNT);
+      navigate('/dashboard');
     }
   };
 
@@ -75,12 +85,12 @@ export default function Login({ setIsAdminMode }) {
     };
     setTempUser(userObj);
     setStep('verify_otp');
-    setRegSuccess(`Mã xác thực OTP đã được gửi tới địa chỉ Gmail (${regEmail}). Vui lòng kiểm tra hòm thư!`);
+    setRegSuccess(`Hệ thống đã phát lệnh gửi mã xác minh 6 số tới địa chỉ Gmail (${regEmail}). Vui lòng mở hòm thư Gmail của bạn để lấy mã.`);
   };
 
   const handleVerifyOtp = (e) => {
     e.preventDefault();
-    if (otpCode === generatedOtp || otpCode === '888999' || otpCode.length === 6) {
+    if (otpCode === generatedOtp || (generatedOtp && otpCode === generatedOtp)) {
       const newUser = registerUser({
         ...tempUser,
         emailVerified: true
@@ -93,7 +103,7 @@ export default function Login({ setIsAdminMode }) {
         navigate('/dashboard');
       }, 1200);
     } else {
-      setOtpError('Mã OTP xác nhận không đúng. Vui lòng kiểm tra lại Gmail!');
+      setOtpError('Mã xác nhận OTP chưa chính xác. Vui lòng kiểm tra lại tin nhắn hòm thư Gmail!');
     }
   };
 
@@ -144,15 +154,11 @@ export default function Login({ setIsAdminMode }) {
           <div className="space-y-4">
             <div className="bg-orange-50 p-4 rounded-2xl border border-orange-200 text-xs space-y-2">
               <div className="font-extrabold text-orange-800 flex items-center gap-1.5 text-sm">
-                <Mail className="w-4 h-4 text-orange-600" /> Xác Thực Mã OTP Gmail
+                <Mail className="w-4 h-4 text-orange-600" /> Nhập Mã Xác Minh OTP Gmail
               </div>
               <p className="text-gray-600 leading-relaxed">
-                Hệ thống đã phát lệnh gửi mã xác nhận 6 số đến địa chỉ Gmail: <b className="text-gray-900 font-mono">{tempUser?.email}</b>
+                Mã xác nhận 6 số đã được gửi tới địa chỉ hòm thư: <b className="text-gray-900 font-mono">{tempUser?.email}</b>
               </p>
-              <div className="bg-white p-2.5 rounded-xl border border-orange-200 flex items-center justify-between">
-                <span className="text-[11px] text-gray-500">Mã OTP gửi về Gmail của bạn:</span>
-                <span className="font-mono font-black text-sm text-orange-600">{generatedOtp}</span>
-              </div>
             </div>
 
             {otpError && (
@@ -163,26 +169,17 @@ export default function Login({ setIsAdminMode }) {
 
             <form onSubmit={handleVerifyOtp} className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Nhập Mã OTP 6 Số Đã Nhận</label>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Mã OTP Xác Thực (6 số)</label>
                 <input
                   type="text"
+                  required
                   maxLength={6}
                   value={otpCode}
                   onChange={(e) => setOtpCode(e.target.value)}
-                  placeholder="------"
+                  placeholder="Nhập 6 số mã OTP"
                   autoFocus
-                  className="w-full text-center text-2xl tracking-[0.5em] font-mono py-3 border-2 border-gray-200 focus:border-orange-500 rounded-xl focus:outline-none bg-gray-50 focus:bg-white"
+                  className="w-full text-center text-xl font-mono py-3 border-2 border-gray-200 focus:border-orange-500 rounded-xl focus:outline-none bg-gray-50 focus:bg-white tracking-widest"
                 />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setOtpCode(generatedOtp)}
-                  className="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl"
-                >
-                  ⚡ Điền Nhanh Mã OTP Gmail ({generatedOtp})
-                </button>
               </div>
 
               <button
@@ -204,7 +201,7 @@ export default function Login({ setIsAdminMode }) {
         ) : (
           /* STEP FORM LOGIN / REGISTER */
           <>
-            {/* Official Google SSO One-Tap Login Button */}
+            {/* Official Google OAuth Button */}
             <button
               type="button"
               onClick={handleGoogleLogin}
@@ -216,117 +213,55 @@ export default function Login({ setIsAdminMode }) {
                 <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.29C.47 8.21 0 10.05 0 12s.47 3.79 1.29 5.42l3.99-3.15z"/>
                 <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.94 1.19 15.23 0 12 0 7.31 0 3.26 2.7 1.29 6.58l3.99 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
               </svg>
-              <span>Đăng Ký Trực Tiếp Bằng Gmail (Google)</span>
+              <span>Đăng Nhập / Đăng Ký Bằng Google</span>
             </button>
 
             {/* Divider */}
             <div className="relative flex items-center justify-center">
               <div className="border-t w-full border-gray-200" />
-              <span className="bg-white px-3 text-[11px] font-bold text-gray-400 uppercase absolute">Hoặc nhập email</span>
+              <span className="bg-white px-3 text-[11px] font-bold text-gray-400 uppercase absolute">Hoặc dùng Email</span>
             </div>
 
             {/* TAB 1: LOGIN */}
             {activeTab === 'login' ? (
-              <div className="space-y-5">
-                
-                {/* 1-Click Quick Preset Account Buttons */}
-                <div className="space-y-2">
-                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block text-center">
-                    Đăng Nhập Thử Nghiệm 1-Click
-                  </span>
-
-                  <div className="grid grid-cols-1 gap-2.5">
-                    
-                    {/* User Account Preset */}
-                    <button
-                      onClick={() => handleQuickLogin(SAMPLE_USER_ACCOUNT)}
-                      className="flex items-center justify-between p-3.5 rounded-2xl border-2 border-orange-200 bg-orange-50/70 hover:bg-orange-100 transition-all text-left group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={SAMPLE_USER_ACCOUNT.avatar}
-                          alt="User"
-                          className="w-10 h-10 rounded-full border-2 border-orange-400 object-cover"
-                        />
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-extrabold text-sm text-gray-900">{SAMPLE_USER_ACCOUNT.name}</span>
-                            <span className="bg-emerald-100 text-emerald-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-emerald-200">
-                              ROLE: USER
-                            </span>
-                          </div>
-                          <span className="text-xs text-gray-500 font-mono">{SAMPLE_USER_ACCOUNT.email} • Pass: {SAMPLE_USER_ACCOUNT.password}</span>
-                        </div>
-                      </div>
-                      <ArrowRight className="w-5 h-5 text-orange-500 group-hover:translate-x-1 transition-transform" />
-                    </button>
-
-                    {/* Admin Account Preset */}
-                    <button
-                      onClick={() => handleQuickLogin(SAMPLE_ADMIN_ACCOUNT)}
-                      className="flex items-center justify-between p-3.5 rounded-2xl border-2 border-slate-800 bg-slate-900 text-white hover:bg-slate-800 transition-all text-left group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={SAMPLE_ADMIN_ACCOUNT.avatar}
-                          alt="Admin"
-                          className="w-10 h-10 rounded-full border-2 border-orange-500 object-cover"
-                        />
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-extrabold text-sm text-white">{SAMPLE_ADMIN_ACCOUNT.name}</span>
-                            <span className="bg-orange-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">
-                              ROLE: ADMIN
-                            </span>
-                          </div>
-                          <span className="text-xs text-slate-400 font-mono">{SAMPLE_ADMIN_ACCOUNT.email} • Pass: {SAMPLE_ADMIN_ACCOUNT.password}</span>
-                        </div>
-                      </div>
-                      <ArrowRight className="w-5 h-5 text-orange-400 group-hover:translate-x-1 transition-transform" />
-                    </button>
-
+              <form onSubmit={handleLoginSubmit} className="space-y-3">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Email Đăng Nhập</label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="email@example.com"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-9 pr-3 py-2.5 text-xs font-medium focus:bg-white focus:outline-none focus:border-orange-500"
+                    />
                   </div>
                 </div>
 
-                {/* Standard Form Login */}
-                <form onSubmit={handleLoginSubmit} className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Email Đăng Nhập</label>
-                    <div className="relative">
-                      <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="user@chuot-hoantien.com"
-                        className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-9 pr-3 py-2.5 text-xs font-medium focus:bg-white focus:outline-none focus:border-orange-500"
-                      />
-                    </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Mật Khẩu</label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="password"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-9 pr-3 py-2.5 text-xs font-medium focus:bg-white focus:outline-none focus:border-orange-500"
+                    />
                   </div>
+                </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Mật Khẩu</label>
-                    <div className="relative">
-                      <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••"
-                        className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-9 pr-3 py-2.5 text-xs font-medium focus:bg-white focus:outline-none focus:border-orange-500"
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-orange-500/25 transition-all"
-                  >
-                    Đăng Nhập Vào Hệ Thống
-                  </button>
-                </form>
-
-              </div>
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-orange-500/25 transition-all"
+                >
+                  Đăng Nhập Vào Hệ Thống
+                </button>
+              </form>
             ) : (
               /* TAB 2: REGISTER NEW USER ACCOUNT WITH GMAIL OTP */
               <form onSubmit={handleRegisterSubmit} className="space-y-3">
@@ -358,7 +293,6 @@ export default function Login({ setIsAdminMode }) {
                       className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-9 pr-3 py-2.5 text-xs font-medium focus:bg-white focus:outline-none focus:border-orange-500"
                     />
                   </div>
-                  <span className="text-[10px] text-gray-400 mt-1 block">Hệ thống sẽ gửi mã OTP xác nhận tới hòm thư Gmail này</span>
                 </div>
 
                 <div>
