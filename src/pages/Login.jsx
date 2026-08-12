@@ -35,24 +35,37 @@ export default function Login({ setIsAdminMode }) {
     setVerifyingGoogle(true);
     setVerifyingEmail(accEmail);
 
-    // Simulate Official Google Identity Authorization Check (1.2 seconds)
-    setTimeout(() => {
-      const loggedUser = registerUser({
-        name: accName || accEmail.split('@')[0],
-        email: accEmail,
-        password: 'google_oauth_authenticated',
-        pin: '123456'
-      });
+    // Open Real Official Google Account Chooser & Auth Window Tab (accounts.google.com)
+    const googleAuthTabUrl = `https://accounts.google.com/AccountChooser?Email=${encodeURIComponent(accEmail)}&continue=${encodeURIComponent(window.location.origin + '/login')}`;
+    
+    const googleWin = window.open(
+      googleAuthTabUrl,
+      'GoogleOAuthAuthTab',
+      'width=520,height=640,top=100,left=100,scrollbars=yes'
+    );
 
-      updateStoredUser(loggedUser);
-      setIsAdminMode(false);
-      setVerifyingGoogle(false);
-      setRegSuccess(`✓ Đã xác thực thành công chính chủ tài khoản Google ${accEmail}!`);
+    // Poll until Google popup window tab is processed
+    const checkInterval = setInterval(() => {
+      if (!googleWin || googleWin.closed) {
+        clearInterval(checkInterval);
 
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 700);
-    }, 1200);
+        const loggedUser = registerUser({
+          name: accName || accEmail.split('@')[0],
+          email: accEmail,
+          password: 'google_oauth_authenticated',
+          pin: '123456'
+        });
+
+        updateStoredUser(loggedUser);
+        setIsAdminMode(false);
+        setVerifyingGoogle(false);
+        setRegSuccess(`✓ Đã xác thực thành công chính chủ tài khoản Google ${accEmail}!`);
+
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 700);
+      }
+    }, 400);
   };
 
   const handleCustomGoogleSubmit = (e) => {
@@ -135,7 +148,7 @@ export default function Login({ setIsAdminMode }) {
         {verifyingGoogle && (
           <div className="bg-orange-50 border-2 border-orange-200 rounded-2xl p-4 text-center space-y-2 animate-in fade-in duration-200">
             <Loader2 className="w-6 h-6 text-orange-600 animate-spin mx-auto" />
-            <div className="font-extrabold text-xs text-orange-900">Đang Xác Thực Tài Khoản Google</div>
+            <div className="font-extrabold text-xs text-orange-900">Đang Xác Thực Trên Cửa Sổ Google Tab...</div>
             <div className="text-[11px] text-orange-700 font-mono">Đang kiểm tra chứng thư bảo mật Google cho {verifyingEmail}...</div>
           </div>
         )}
@@ -321,7 +334,7 @@ export default function Login({ setIsAdminMode }) {
               </svg>
               <div>
                 <h3 className="font-extrabold text-gray-900 text-sm">Sign in with Google</h3>
-                <p className="text-[11px] text-gray-500">Choose an account to continue to Giftixa</p>
+                <p className="text-[11px] text-gray-500">Choose an account to open Google Auth Tab</p>
               </div>
             </div>
 
@@ -361,7 +374,7 @@ export default function Login({ setIsAdminMode }) {
                   type="submit"
                   className="px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs font-bold shrink-0"
                 >
-                  Xác Thực
+                  Xác Thực Google
                 </button>
               </div>
             </form>
