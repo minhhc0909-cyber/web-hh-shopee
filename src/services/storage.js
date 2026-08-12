@@ -135,10 +135,15 @@ export const saveAdminSession = (session) => {
 
 export const convertProductLink = (inputUrl) => {
   const user = getStoredUser();
+  let cleanUrl = inputUrl.trim();
+  if (!cleanUrl.startsWith("http://") && !cleanUrl.startsWith("https://")) {
+    cleanUrl = "https://" + cleanUrl;
+  }
+
   let platform = "shopee";
   let platformName = "Shopee VN";
 
-  const lower = inputUrl.toLowerCase();
+  const lower = cleanUrl.toLowerCase();
   if (lower.includes("tiktok") || lower.includes("vt.tiktok")) {
     platform = "tiktok";
     platformName = "TikTok Shop";
@@ -150,10 +155,10 @@ export const convertProductLink = (inputUrl) => {
     platformName = "ShopeeFood";
   }
 
-  // Generate affiliate sub_id link
-  const randomHash = Math.random().toString(36).substring(2, 9);
-  const subId = user.id;
-  const affiliateUrl = `https://${platform === 'shopee' ? 'shope.ee' : platform === 'tiktok' ? 'vt.tiktok.com' : 's.lazada.vn'}/${randomHash}?sub_id=${subId}`;
+  // Preserve real live working product URL & append SubID parameter
+  const subId = user.id || "USR-DEFAULT";
+  const separator = cleanUrl.includes("?") ? "&" : "?";
+  const affiliateUrl = `${cleanUrl}${separator}sub_id=${subId}&utm_source=chuot_cashback`;
 
   // Estimate cashback (sample math)
   const estimatedPrice = 250000;
@@ -177,5 +182,6 @@ export const convertProductLink = (inputUrl) => {
 
   return record;
 };
+
 
 export const getLeaderboard = () => LEADERBOARD_DATA;

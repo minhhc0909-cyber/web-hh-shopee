@@ -38,19 +38,17 @@ export default function Login({ setIsAdminMode }) {
   };
 
   const handleGoogleLogin = () => {
-    const googleUser = registerUser({
+    const googleMail = 'user.google@gmail.com';
+    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    setGeneratedOtp(newOtp);
+    setTempUser({
       name: "Tài Khoản Gmail (Google Authenticated)",
-      email: "user.google@gmail.com",
+      email: googleMail,
       password: "google_oauth_pass",
       pin: "123456"
     });
-
-    setIsAdminMode(false);
-    setRegSuccess("Đã xác thực thành công qua tài khoản Gmail chính chủ!");
-
-    setTimeout(() => {
-      navigate('/dashboard');
-    }, 1200);
+    setStep('verify_otp');
+    setRegSuccess(`Hệ thống đã phát lệnh gửi mã OTP 6 số về Gmail: ${googleMail}. Vui lòng nhập mã để hoàn tất kích hoạt!`);
   };
 
   const handleLoginSubmit = (e) => {
@@ -66,7 +64,6 @@ export default function Login({ setIsAdminMode }) {
     e.preventDefault();
     if (!regName.trim() || !regEmail.trim() || !regPassword.trim()) return;
 
-    // Check if email looks valid or is gmail
     const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
     setGeneratedOtp(newOtp);
 
@@ -94,7 +91,7 @@ export default function Login({ setIsAdminMode }) {
 
       setTimeout(() => {
         navigate('/dashboard');
-      }, 1500);
+      }, 1200);
     } else {
       setOtpError('Mã OTP xác nhận không đúng. Vui lòng kiểm tra lại Gmail!');
     }

@@ -106,18 +106,20 @@ export default function Navbar({ isAdminMode, setIsAdminMode }) {
               </div>
             </Link>
 
-            {/* Mode Switcher Admin vs User */}
-            <button
-              onClick={() => setIsAdminMode(!isAdminMode)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
-                isAdminMode
-                  ? 'bg-slate-900 text-white border-slate-900 hover:bg-slate-800'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>{isAdminMode ? 'Thoát Admin' : 'Vào Admin'}</span>
-            </button>
+            {/* Mode Switcher Admin vs User - Only visible for Admin Role */}
+            {user.role === 'admin' && (
+              <button
+                onClick={() => setIsAdminMode(!isAdminMode)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                  isAdminMode
+                    ? 'bg-slate-900 text-white border-slate-900 hover:bg-slate-800'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>{isAdminMode ? 'Thoát Admin' : 'Vào Admin'}</span>
+              </button>
+            )}
 
             {/* User Profile & Account Role Switcher */}
             <div className="flex items-center gap-2 pl-2 border-l border-gray-200">
@@ -175,16 +177,19 @@ export default function Navbar({ isAdminMode, setIsAdminMode }) {
                 <div className="text-[11px] font-bold text-orange-600">Số dư: {user.balance.toLocaleString('vi-VN')} đ</div>
               </div>
             </div>
-            <button
-              onClick={() => {
-                setIsAdminMode(!isAdminMode);
-                setMobileMenuOpen(false);
-              }}
-              className="px-2.5 py-1 bg-slate-900 text-white rounded text-xs font-bold"
-            >
-              {isAdminMode ? 'User Mode' : 'Admin'}
-            </button>
+            {user.role === 'admin' && (
+              <button
+                onClick={() => {
+                  setIsAdminMode(!isAdminMode);
+                  setMobileMenuOpen(false);
+                }}
+                className="px-2.5 py-1 bg-slate-900 text-white rounded text-xs font-bold"
+              >
+                {isAdminMode ? 'User Mode' : 'Admin'}
+              </button>
+            )}
           </div>
+
 
           <div className="space-y-1">
             {activeLinks.map((item) => {
