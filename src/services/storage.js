@@ -121,12 +121,10 @@ export const registerUser = (userData) => {
   return newUser;
 };
 
-export const convertProductLink = (url, userId, price) => {
+export const convertProductLink = (url, userId, customPrice) => {
   const cleanUrl = (url || '').trim();
   const rawId = userId || '888999';
   const subId1 = rawId.replace(/[^0-9a-zA-Z]/g, '') || '888999';
-  const itemPrice = Number(price) > 0 ? Number(price) : 150000;
-
 
   let platform = 'shopee';
   let platformName = 'Shopee VN';
@@ -160,12 +158,19 @@ export const convertProductLink = (url, userId, price) => {
     ? `${cleanUrl}${separator}sub_id1=${subId1}&mmp_pid=an_17349710562&utm_source=an_17349710562`
     : `${cleanUrl}${separator}sub_id=${subId1}&utm_source=chuot_cashback`;
 
-  // Precise Shopee Commission Estimation Formula: 10% capped at 20,000 VND + Shop Extra (5%) -> 40% actual user cashback
-  const shopeeCommission = Math.min(itemPrice * 0.10, 20000); // 10% capped at 20,000 VND
-  const shopCommission = itemPrice * 0.05; // 5% Shop Extra
-  const totalCommission = shopeeCommission + shopCommission;
-  const estimatedCashback = Math.round(totalCommission * 0.40); // Actual 40% cashback
+  if (shopId && itemId) {
+    affiliateUrl = `https://shopee.vn/product/${shopId}/${itemId}?sub_id1=${subId1}&mmp_pid=an_17349710562&utm_source=an_17349710562`;
+  }
 
+  const itemPrice = Number(customPrice) > 0 ? Number(customPrice) : 0;
+  let estimatedCashback = 0;
+
+  if (itemPrice > 0) {
+    const shopeeCommission = Math.min(itemPrice * 0.10, 20000);
+    const shopCommission = itemPrice * 0.05;
+    const totalCommission = shopeeCommission + shopCommission;
+    estimatedCashback = Math.round(totalCommission * 0.40);
+  }
 
   return {
     originalUrl: url,
@@ -173,18 +178,17 @@ export const convertProductLink = (url, userId, price) => {
     resolvedUrl: cleanUrl,
     shopId,
     itemId,
+    itemPrice,
     platform,
     platformName,
     subId: subId1,
     subId1: subId1,
     estimatedCashbackRate: 80,
     estimatedCashback: estimatedCashback,
-    estimatedCashbackAmount: estimatedCashback,
-    shopeeCommission: Math.round(shopeeCommission),
-    shopCommission: Math.round(shopCommission),
-    totalCommission: Math.round(totalCommission)
+    estimatedCashbackAmount: estimatedCashback
   };
 };
+
 
 
 
