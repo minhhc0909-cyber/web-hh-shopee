@@ -155,11 +155,11 @@ export const convertProductLink = (url, userId) => {
 
   const separator = cleanUrl.includes('?') ? '&' : '?';
   let affiliateUrl = lower.includes('shopee')
-    ? `${cleanUrl}${separator}sub_id1=${subId1}&mmp_pid=an_17349710562`
+    ? `${cleanUrl}${separator}sub_id1=${subId1}&mmp_pid=an_17349710562&utm_source=an_17349710562`
     : `${cleanUrl}${separator}sub_id=${subId1}&utm_source=chuot_cashback`;
 
   if (shopId && itemId) {
-    affiliateUrl = `https://shope.ee/an_link?mmp_pid=an_17349710562&url=https%3A%2F%2Fshopee.vn%2Fproduct%2F${shopId}%2F${itemId}&sub_id1=${subId1}`;
+    affiliateUrl = `https://shopee.vn/product/${shopId}/${itemId}?sub_id1=${subId1}&mmp_pid=an_17349710562&utm_source=an_17349710562`;
   }
 
   return {
@@ -177,6 +177,7 @@ export const convertProductLink = (url, userId) => {
     estimatedCashbackAmount: 25000
   };
 };
+
 
 
 
