@@ -17,11 +17,16 @@ const KEYS = {
 export const getStoredUser = () => {
   const data = localStorage.getItem(KEYS.USER);
   if (!data) {
-    localStorage.setItem(KEYS.USER, JSON.stringify(INITIAL_USER));
-    return INITIAL_USER;
+    return null;
   }
   return JSON.parse(data);
 };
+
+export const logoutUser = () => {
+  localStorage.removeItem(KEYS.USER);
+  return null;
+};
+
 
 export const updateStoredUser = (updatedFields) => {
   const current = getStoredUser();
