@@ -258,6 +258,13 @@ app.post('/api/user/convert', async (req, res) => {
       }
     }
 
+    // Precise Shopee Commission Estimation Formula: 10% capped at 20,000 VND + Shop Extra (5%) -> 80% to User
+    const samplePrice = 150000;
+    const shopeeCommission = Math.min(samplePrice * 0.10, 20000); // 10% capped at 20,000 VND
+    const shopCommission = samplePrice * 0.05; // 5% Shop Extra
+    const totalCommission = shopeeCommission + shopCommission;
+    const estimatedCashback = Math.round(totalCommission * 0.80);
+
     res.json({
       originalUrl: url,
       affiliateUrl,
@@ -269,9 +276,13 @@ app.post('/api/user/convert', async (req, res) => {
       subId: rawSubId,
       subId1: rawSubId,
       estimatedCashbackRate: 80,
-      estimatedCashback: 25000,
-      estimatedCashbackAmount: 25000
+      estimatedCashback: estimatedCashback,
+      estimatedCashbackAmount: estimatedCashback,
+      shopeeCommission: Math.round(shopeeCommission),
+      shopCommission: Math.round(shopCommission),
+      totalCommission: Math.round(totalCommission)
     });
+
 
 
 

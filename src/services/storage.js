@@ -158,9 +158,12 @@ export const convertProductLink = (url, userId) => {
     ? `${cleanUrl}${separator}sub_id1=${subId1}&mmp_pid=an_17349710562&utm_source=an_17349710562`
     : `${cleanUrl}${separator}sub_id=${subId1}&utm_source=chuot_cashback`;
 
-  if (shopId && itemId) {
-    affiliateUrl = `https://shopee.vn/product/${shopId}/${itemId}?sub_id1=${subId1}&mmp_pid=an_17349710562&utm_source=an_17349710562`;
-  }
+  // Precise Shopee Commission Estimation: 10% capped at 20k + Shop Extra 5% -> 80% user cashback
+  const samplePrice = 150000;
+  const shopeeCommission = Math.min(samplePrice * 0.10, 20000); // 10% capped at 20,000 VND
+  const shopCommission = samplePrice * 0.05; // 5% Shop Extra
+  const totalCommission = shopeeCommission + shopCommission;
+  const estimatedCashback = Math.round(totalCommission * 0.80);
 
   return {
     originalUrl: url,
@@ -173,10 +176,14 @@ export const convertProductLink = (url, userId) => {
     subId: subId1,
     subId1: subId1,
     estimatedCashbackRate: 80,
-    estimatedCashback: 25000,
-    estimatedCashbackAmount: 25000
+    estimatedCashback: estimatedCashback,
+    estimatedCashbackAmount: estimatedCashback,
+    shopeeCommission: Math.round(shopeeCommission),
+    shopCommission: Math.round(shopCommission),
+    totalCommission: Math.round(totalCommission)
   };
 };
+
 
 
 
