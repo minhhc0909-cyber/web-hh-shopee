@@ -139,8 +139,9 @@ app.post('/api/user/sync', async (req, res) => {
 
 // Supabase Database Sync Helper
 async function syncUserToSupabaseDatabase(user) {
-  const supabaseUrl = process.env.SUPABASE_URL || 'https://obmhwocpyhrofcmhltco.supabase.co';
+  const supabaseUrl = process.env.SUPABASE_URL || 'https://obmhvocpyhrofcmhltco.supabase.co';
   const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || user.supabaseKey || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ibWh2b2NweWhyb2ZjbWhsdGNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1MDEzMzgsImV4cCI6MjEwMjA3NzMzOH0.81WqnXGUFkDgWeTdIYC1VJjd60qlXmk6gFJdh3YZq9E";
+
 
   if (!supabaseKey) {
     console.log(`[Supabase DB Note] Add SUPABASE_ANON_KEY to sync ${user.email}.`);

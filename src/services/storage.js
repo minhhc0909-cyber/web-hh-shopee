@@ -14,9 +14,10 @@ const KEYS = {
   CONVERTED_LINKS: "chuot_converted_links"
 };
 
-// Supabase REST Endpoint & Anon Public Key for project obmhwocpyhrofcmhltco (giftixa-db)
-const SUPABASE_PROJECT_URL = "https://obmhwocpyhrofcmhltco.supabase.co";
+// Supabase REST Endpoint & Anon Public Key for project obmhvocpyhrofcmhltco (giftixa-db)
+const SUPABASE_PROJECT_URL = "https://obmhvocpyhrofcmhltco.supabase.co";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ibWh2b2NweWhyb2ZjbWhsdGNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1MDEzMzgsImV4cCI6MjEwMjA3NzMzOH0.81WqnXGUFkDgWeTdIYC1VJjd60qlXmk6gFJdh3YZq9E";
+
 
 export const syncUserToSupabaseDirect = async (user) => {
   if (!user || !user.email) return;
