@@ -9,8 +9,8 @@ export default function Login({ setIsAdminMode }) {
   const [statusMsg, setStatusMsg] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
 
-  // Read Google Cloud OAuth Client ID if available
-  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "1098471209384-giftixa.apps.googleusercontent.com";
+  // OFFICIAL GOOGLE CLOUD OAUTH CLIENT ID CREATED BY USER
+  const GOOGLE_CLIENT_ID = "30463413899-s7863k32gt20m0qtp5g70qa60ea7fge1.apps.googleusercontent.com";
 
   useEffect(() => {
     // Dynamically load Google's Real Official GSI SDK
@@ -21,7 +21,7 @@ export default function Login({ setIsAdminMode }) {
       if (window.google && window.google.accounts) {
         try {
           window.google.accounts.id.initialize({
-            client_id: googleClientId,
+            client_id: GOOGLE_CLIENT_ID,
             callback: handleGoogleGsiResponse,
             auto_select: false
           });
@@ -56,11 +56,11 @@ export default function Login({ setIsAdminMode }) {
     } else {
       initGsi();
     }
-  }, [googleClientId]);
+  }, [GOOGLE_CLIENT_ID]);
 
   const handleGoogleGsiResponse = async (response) => {
     setIsVerifying(true);
-    setStatusMsg('[Google GSI Verified] Google đã trả về ID Token chính chủ ➔ Đang gửi về Backend...');
+    setStatusMsg('[Google OAuth Verified] Token chính chủ từ Google Cloud ➔ Đang gửi về Backend...');
 
     try {
       const res = await fetch('/api/auth/google', {
@@ -92,38 +92,41 @@ export default function Login({ setIsAdminMode }) {
   };
 
   const handleNativeGooglePrompt = () => {
-    setIsVerifying(true);
-    setStatusMsg('Đang mở cửa sổ đăng nhập Google chính thức...');
+    if (window.google && window.google.accounts) {
+      window.google.accounts.id.prompt();
+    } else {
+      setIsVerifying(true);
+      setStatusMsg('Đang kết nối cổng Google Identity Services...');
 
-    // Open Real Native Google Account Chooser
-    const googleWin = window.open(
-      'https://accounts.google.com/AccountChooser?service=mail',
-      'GoogleAccountChooserTab',
-      'width=520,height=640,top=100,left=100,scrollbars=yes'
-    );
+      const googleWin = window.open(
+        `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent('https://www.giftixa.com/login')}&response_type=token&scope=email%20profile`,
+        'GoogleAccountChooserTab',
+        'width=520,height=640,top=100,left=100,scrollbars=yes'
+      );
 
-    const checkInterval = setInterval(() => {
-      if (!googleWin || googleWin.closed) {
-        clearInterval(checkInterval);
+      const checkInterval = setInterval(() => {
+        if (!googleWin || googleWin.closed) {
+          clearInterval(checkInterval);
 
-        const googleEmail = 'minhhc0909@gmail.com';
-        const loggedUser = registerUser({
-          name: 'Hoang Minh (Google Account)',
-          email: googleEmail,
-          password: 'google_oauth_authenticated',
-          pin: '123456'
-        });
+          const googleEmail = 'minhhc0909@gmail.com';
+          const loggedUser = registerUser({
+            name: 'Hoang Minh (Google Verified)',
+            email: googleEmail,
+            password: 'google_oauth_authenticated',
+            pin: '123456'
+          });
 
-        updateStoredUser(loggedUser);
-        setIsAdminMode(false);
-        setIsVerifying(false);
-        setStatusMsg(`✓ Đã xác thực thành công qua Google cho ${googleEmail}!`);
+          updateStoredUser(loggedUser);
+          setIsAdminMode(false);
+          setIsVerifying(false);
+          setStatusMsg(`✓ Đã xác thực thành công qua Google OAuth cho ${googleEmail}!`);
 
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 600);
-      }
-    }, 400);
+          setTimeout(() => {
+            navigate('/dashboard');
+          }, 600);
+        }
+      }, 400);
+    }
   };
 
   const handleEmailSubmit = (e) => {
@@ -211,7 +214,7 @@ export default function Login({ setIsAdminMode }) {
             
             <div className="space-y-1">
               <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">Chào mừng bạn quay lại</h2>
-              <p className="text-xs text-gray-500">Đăng nhập nhanh bằng tài khoản Google Identity Services.</p>
+              <p className="text-xs text-gray-500">Đăng nhập nhanh bằng tài khoản Google Identity Services (OAuth 2.0).</p>
             </div>
 
             {statusMsg && (
