@@ -158,12 +158,12 @@ export const convertProductLink = (url, userId) => {
     ? `${cleanUrl}${separator}sub_id1=${subId1}&mmp_pid=an_17349710562&utm_source=an_17349710562`
     : `${cleanUrl}${separator}sub_id=${subId1}&utm_source=chuot_cashback`;
 
-  // Precise Shopee Commission Estimation: 10% capped at 20k + Shop Extra 5% -> 80% user cashback
+  // Precise Shopee Commission Estimation Formula: 10% capped at 20,000 VND + Shop Extra (5%) -> 40% actual user cashback
   const samplePrice = 150000;
   const shopeeCommission = Math.min(samplePrice * 0.10, 20000); // 10% capped at 20,000 VND
   const shopCommission = samplePrice * 0.05; // 5% Shop Extra
   const totalCommission = shopeeCommission + shopCommission;
-  const estimatedCashback = Math.round(totalCommission * 0.80);
+  const estimatedCashback = Math.round(totalCommission * 0.40); // Actual 40% cashback
 
   return {
     originalUrl: url,
@@ -183,6 +183,7 @@ export const convertProductLink = (url, userId) => {
     totalCommission: Math.round(totalCommission)
   };
 };
+
 
 
 
