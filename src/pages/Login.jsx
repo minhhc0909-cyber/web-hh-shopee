@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, Lock, Mail, ArrowRight, UserPlus, KeyRound, CheckCircle2, User, Send } from 'lucide-react';
+import { ShieldCheck, Lock, Mail, ArrowRight, UserPlus, KeyRound, CheckCircle2, User, Send, Loader2 } from 'lucide-react';
 import { updateStoredUser, registerUser } from '../services/storage';
 
 export default function Login({ setIsAdminMode }) {
@@ -24,25 +24,47 @@ export default function Login({ setIsAdminMode }) {
   const [otpError, setOtpError] = useState('');
   const [regSuccess, setRegSuccess] = useState('');
   const [tempUser, setTempUser] = useState(null);
+  const [sendingEmail, setSendingEmail] = useState(false);
+
+  const triggerRealEmailOtp = async (userEmail, name, pass, pin) => {
+    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    setGeneratedOtp(newOtp);
+    setSendingEmail(true);
+
+    setTempUser({
+      name: name || userEmail.split('@')[0],
+      email: userEmail,
+      password: pass || '123456',
+      pin: pin || '123456'
+    });
+
+    setStep('verify_otp');
+    setRegSuccess(`Đang gửi thư Gmail chứa mã OTP 6 số tới địa chỉ: ${userEmail}...`);
+
+    try {
+      const res = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userEmail, otp: newOtp })
+      });
+      const data = await res.json();
+      setSendingEmail(false);
+      if (data.success) {
+        setRegSuccess(`Đã gửi thư chứa mã OTP 6 số thành công tới địa chỉ Gmail: ${userEmail}. Vui lòng mở hòm thư Gmail để nhận mã!`);
+      }
+    } catch (err) {
+      setSendingEmail(false);
+      console.warn('Real email dispatch:', err);
+    }
+  };
 
   const handleGoogleLogin = () => {
-    // Official Google OAuth 2.0 Identity Popup
-    const userMail = prompt('Nhập địa chỉ Gmail chính chủ của bạn để đăng nhập qua Google OAuth:');
+    const userMail = prompt('Nhập địa chỉ Gmail chính chủ của bạn để nhận mã OTP xác thực qua Google:');
     if (!userMail || !userMail.includes('@')) {
       alert('Vui lòng nhập email Gmail hợp lệ');
       return;
     }
-
-    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedOtp(newOtp);
-    setTempUser({
-      name: userMail.split('@')[0],
-      email: userMail,
-      password: "google_oauth_pass",
-      pin: "123456"
-    });
-    setStep('verify_otp');
-    setRegSuccess(`Mã xác thực 6 số đã được phát lệnh gửi tới hòm thư Gmail: ${userMail}. Vui lòng mở inbox Gmail để nhập mã.`);
+    triggerRealEmailOtp(userMail, userMail.split('@')[0], 'google_oauth_pass', '123456');
   };
 
   const handleLoginSubmit = (e) => {
@@ -73,19 +95,7 @@ export default function Login({ setIsAdminMode }) {
   const handleRegisterSubmit = (e) => {
     e.preventDefault();
     if (!regName.trim() || !regEmail.trim() || !regPassword.trim()) return;
-
-    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedOtp(newOtp);
-
-    const userObj = {
-      name: regName,
-      email: regEmail,
-      password: regPassword,
-      pin: regPin
-    };
-    setTempUser(userObj);
-    setStep('verify_otp');
-    setRegSuccess(`Hệ thống đã phát lệnh gửi mã xác minh 6 số tới địa chỉ Gmail (${regEmail}). Vui lòng mở hòm thư Gmail của bạn để lấy mã.`);
+    triggerRealEmailOtp(regEmail, regName, regPassword, regPin);
   };
 
   const handleVerifyOtp = (e) => {
@@ -144,7 +154,7 @@ export default function Login({ setIsAdminMode }) {
 
         {regSuccess && (
           <div className="bg-emerald-50 text-emerald-700 text-xs p-3.5 rounded-xl border border-emerald-200 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+            {sendingEmail ? <Loader2 className="w-4 h-4 shrink-0 text-emerald-600 animate-spin" /> : <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />}
             <span>{regSuccess}</span>
           </div>
         )}
@@ -219,7 +229,7 @@ export default function Login({ setIsAdminMode }) {
             {/* Divider */}
             <div className="relative flex items-center justify-center">
               <div className="border-t w-full border-gray-200" />
-              <span className="bg-white px-3 text-[11px] font-bold text-gray-400 uppercase absolute">Hoặc dùng Email</span>
+              <span className="bg-white px-3 text-[11px] font-bold text-gray-400 uppercase absolute">Hoặc nhập email</span>
             </div>
 
             {/* TAB 1: LOGIN */}
