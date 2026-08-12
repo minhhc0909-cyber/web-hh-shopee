@@ -1,44 +1,66 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Mail, Send, CheckCircle2, User, UserPlus, KeyRound, Lock, Loader2 } from 'lucide-react';
+import { ArrowLeft, Mail, Send, CheckCircle2, Loader2 } from 'lucide-react';
 import { updateStoredUser, registerUser } from '../services/storage';
 
 export default function Login({ setIsAdminMode }) {
   const navigate = useNavigate();
   const [emailInput, setEmailInput] = useState('');
-  const [showGoogleModal, setShowGoogleModal] = useState(false);
-  const [showCustomEmailInput, setShowCustomEmailInput] = useState(false);
-  const [customEmail, setCustomEmail] = useState('');
   const [statusMsg, setStatusMsg] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
 
-  // 1:1 Accounts matching user's exact Google accounts screenshot
-  const googleAccounts = [
-    { name: 'Hoang Minh', email: 'minhhc0909@gmail.com', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80', initial: 'H', color: 'bg-amber-500' },
-    { name: 'Deluxe Autocar', email: 'autocardeluxes@gmail.com', avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=150&q=80', initial: 'D', color: 'bg-sky-600' },
-    { name: 'Linh Phương', email: 'linh386606@gmail.com', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80', initial: 'L', color: 'bg-emerald-600' },
-    { name: 'Minh Hoang', email: 'hoangminh1999.8a@gmail.com', avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=150&q=80', initial: 'M', color: 'bg-purple-600' },
-    { name: 'asby reginia', email: 'reginiaasbymcg94@gmail.com', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80', initial: 'a', color: 'bg-pink-600' },
-    { name: 'minh hoàng', email: 'hoangminh1999.1a@gmail.com', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80', initial: 'm', color: 'bg-indigo-600' }
-  ];
+  useEffect(() => {
+    // Dynamically load Google's Real Official GSI SDK
+    const scriptId = 'google-gsi-client-script';
+    let script = document.getElementById(scriptId);
 
-  // Executing Google Identity Services (OAuth 2.0 / OpenID Connect) Flow
-  const handleSelectAccount = async (account) => {
-    setShowGoogleModal(false);
+    const initGsi = () => {
+      if (window.google && window.google.accounts) {
+        window.google.accounts.id.initialize({
+          client_id: "1098471209384-giftixa.apps.googleusercontent.com",
+          callback: handleGoogleGsiResponse,
+          auto_select: false
+        });
+
+        // Render Official Google Native Sign-In Button directly inside container
+        const btnContainer = document.getElementById("google-official-btn-container");
+        if (btnContainer) {
+          btnContainer.innerHTML = '';
+          window.google.accounts.id.renderButton(btnContainer, {
+            theme: "outline",
+            size: "large",
+            width: "100%",
+            text: "signin_with",
+            shape: "rectangular",
+            logo_alignment: "left"
+          });
+        }
+      }
+    };
+
+    if (!script) {
+      script = document.createElement('script');
+      script.id = scriptId;
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      script.onload = initGsi;
+      document.head.appendChild(script);
+    } else {
+      initGsi();
+    }
+  }, []);
+
+  const handleGoogleGsiResponse = async (response) => {
     setIsVerifying(true);
-    setStatusMsg(`[Backend OAuth] Google trả về ID Token ➔ Backend kiểm tra Token & Tạo Session...`);
+    setStatusMsg('[Google GSI Verified] Google đã trả về ID Token chính chủ ➔ Đang gửi về Backend...');
 
     try {
-      // Step 4 & 5: Call Backend API to verify ID Token & create Session
+      // Send Google response.credential JWT ID Token to Backend API
       const res = await fetch('/api/auth/google', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id_token: `GSI_OPENID_TOKEN_${Date.now()}`,
-          email: account.email,
-          name: account.name,
-          avatar: account.avatar
-        })
+        body: JSON.stringify({ credential: response.credential })
       });
 
       const data = await res.json();
@@ -47,7 +69,7 @@ export default function Login({ setIsAdminMode }) {
         updateStoredUser(data.user);
         setIsAdminMode(data.user.role === 'admin');
         setIsVerifying(false);
-        setStatusMsg(`✓ Backend đã kiểm tra Token thành công! Tạo Session JWT cho ${account.email}. Đang đăng nhập...`);
+        setStatusMsg(`✓ Google xác thực chính chủ cho ${data.user.email}! Đang đăng nhập...`);
 
         setTimeout(() => {
           if (data.user.role === 'admin') {
@@ -56,21 +78,18 @@ export default function Login({ setIsAdminMode }) {
             navigate('/dashboard');
           }
         }, 600);
-      } else {
-        throw new Error(data.error || 'Xác thực không thành công');
       }
     } catch (err) {
-      console.log('Backend Auth fallback:', err.message);
-      const loggedUser = registerUser({
-        name: account.name,
-        email: account.email,
-        password: 'google_oauth_authenticated',
-        pin: '123456'
-      });
-      updateStoredUser(loggedUser);
-      setIsAdminMode(loggedUser.role === 'admin');
+      console.error('Google GSI verification error:', err);
       setIsVerifying(false);
-      navigate('/dashboard');
+    }
+  };
+
+  const handleNativeGooglePrompt = () => {
+    if (window.google && window.google.accounts) {
+      window.google.accounts.id.prompt();
+    } else {
+      window.open('https://accounts.google.com/AccountChooser?service=mail', '_blank');
     }
   };
 
@@ -104,10 +123,10 @@ export default function Login({ setIsAdminMode }) {
   return (
     <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center p-0 sm:p-6 font-sans">
       
-      {/* Container 2 Cột */}
+      {/* Main Container 2 Columns */}
       <div className="bg-white rounded-none sm:rounded-3xl shadow-2xl overflow-hidden max-w-5xl w-full min-h-[640px] flex flex-col md:flex-row border border-gray-100">
         
-        {/* CỘT TRÁI: ORANGE BANNER */}
+        {/* LEFT COLUMN: ORANGE BRAND BANNER */}
         <div className="md:w-5/12 bg-gradient-to-br from-orange-500 via-orange-600 to-amber-600 text-white p-8 sm:p-12 flex flex-col justify-between relative overflow-hidden">
           
           <div className="absolute -top-12 -left-12 w-48 h-48 rounded-full bg-white/10 blur-xl pointer-events-none" />
@@ -144,7 +163,7 @@ export default function Login({ setIsAdminMode }) {
           </div>
         </div>
 
-        {/* CỘT PHẢI: FORM ĐĂNG NHẬP */}
+        {/* RIGHT COLUMN: LOGIN FORM WITH OFFICIAL GOOGLE NATIVE BUTTON */}
         <div className="md:w-7/12 p-8 sm:p-12 bg-white flex flex-col justify-between relative">
           
           <div className="flex items-center justify-between">
@@ -159,7 +178,7 @@ export default function Login({ setIsAdminMode }) {
             
             <div className="space-y-1">
               <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">Chào mừng bạn quay lại</h2>
-              <p className="text-xs text-gray-500">Đăng nhập nhanh bằng tài khoản Google Identity Services (OAuth 2.0).</p>
+              <p className="text-xs text-gray-500">Đăng nhập nhanh bằng tài khoản Google Identity Services.</p>
             </div>
 
             {statusMsg && (
@@ -169,7 +188,7 @@ export default function Login({ setIsAdminMode }) {
               </div>
             )}
 
-            {/* Form Nhập Email OTP */}
+            {/* Email OTP Login Form */}
             <form onSubmit={handleEmailSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1.5">Địa chỉ email</label>
@@ -197,20 +216,25 @@ export default function Login({ setIsAdminMode }) {
               <span className="bg-white px-4 text-xs text-gray-400 font-medium uppercase absolute">hoặc</span>
             </div>
 
-            {/* OFFICIAL GOOGLE LOGIN BUTTON */}
-            <button
-              type="button"
-              onClick={() => setShowGoogleModal(true)}
-              className="w-full py-3.5 px-4 bg-white hover:bg-gray-50 border border-gray-200 rounded-2xl text-xs sm:text-sm font-bold text-gray-700 transition-all flex items-center justify-center gap-3 shadow-xs hover:shadow-md"
-            >
-              <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
-                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.29v3.15C3.26 21.3 7.31 24 12 24z"/>
-                <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.29C.47 8.21 0 10.05 0 12s.47 3.79 1.29 5.42l3.99-3.15z"/>
-                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.94 1.19 15.23 0 12 0 7.31 0 3.26 2.7 1.29 6.58l3.99 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-              </svg>
-              <span>Đăng nhập bằng Google</span>
-            </button>
+            {/* REAL OFFICIAL GOOGLE NATIVE BUTTON CONTAINER (Rendered directly by Google GSI SDK) */}
+            <div className="space-y-2">
+              <div id="google-official-btn-container" className="w-full min-h-[44px] flex justify-center"></div>
+
+              {/* Fallback button triggering Google's native Account Chooser */}
+              <button
+                type="button"
+                onClick={handleNativeGooglePrompt}
+                className="w-full py-3.5 px-4 bg-white hover:bg-gray-50 border border-gray-200 rounded-2xl text-xs sm:text-sm font-bold text-gray-700 transition-all flex items-center justify-center gap-3 shadow-xs hover:shadow-md"
+              >
+                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                  <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.29v3.15C3.26 21.3 7.31 24 12 24z"/>
+                  <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.29C.47 8.21 0 10.05 0 12s.47 3.79 1.29 5.42l3.99-3.15z"/>
+                  <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.94 1.19 15.23 0 12 0 7.31 0 3.26 2.7 1.29 6.58l3.99 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                </svg>
+                <span>Đăng nhập bằng Google (Chính Thức)</span>
+              </button>
+            </div>
 
           </div>
 
@@ -221,115 +245,6 @@ export default function Login({ setIsAdminMode }) {
         </div>
 
       </div>
-
-      {/* ------------------------------------------------------------------ */}
-      {/* GOOGLE ACCOUNT SELECTOR MODAL */}
-      {/* ------------------------------------------------------------------ */}
-      {showGoogleModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-xl w-full p-8 shadow-2xl border border-gray-200 space-y-6 relative overflow-hidden">
-            
-            <div className="flex items-center gap-2 pb-2">
-              <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
-                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.29v3.15C3.26 21.3 7.31 24 12 24z"/>
-                <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.29C.47 8.21 0 10.05 0 12s.47 3.79 1.29 5.42l3.99-3.15z"/>
-                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.94 1.19 15.23 0 12 0 7.31 0 3.26 2.7 1.29 6.58l3.99 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-              </svg>
-              <span className="text-xs font-bold text-gray-600">Đăng nhập bằng Google</span>
-            </div>
-
-            <div className="space-y-1">
-              <h2 className="text-3xl font-normal text-gray-900 tracking-tight">Chọn tài khoản</h2>
-              <p className="text-sm text-gray-600 font-medium">Tiếp tục tới <span className="text-indigo-600 font-bold">giftixa.com</span></p>
-            </div>
-
-            <div className="divide-y divide-gray-100 border-t border-b border-gray-100">
-              {googleAccounts.map((acc) => (
-                <button
-                  key={acc.email}
-                  onClick={() => handleSelectAccount(acc)}
-                  className="w-full flex items-center justify-between py-3.5 px-2 hover:bg-gray-50/80 rounded-xl transition-all text-left group"
-                >
-                  <div className="flex items-center gap-3.5">
-                    {acc.avatar ? (
-                      <img src={acc.avatar} alt={acc.name} className="w-9 h-9 rounded-full object-cover border border-gray-200" />
-                    ) : (
-                      <div className={`w-9 h-9 rounded-full ${acc.color} text-white flex items-center justify-center text-sm font-bold`}>
-                        {acc.initial}
-                      </div>
-                    )}
-                    <div>
-                      <div className="text-sm font-extrabold text-gray-900 group-hover:text-orange-600">{acc.name}</div>
-                      <div className="text-xs text-gray-500 font-normal">{acc.email}</div>
-                    </div>
-                  </div>
-                </button>
-              ))}
-
-              {showCustomEmailInput ? (
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    if (!customEmail || !customEmail.includes('@')) return;
-                    handleSelectAccount({ name: customEmail.split('@')[0], email: customEmail });
-                  }}
-                  className="py-3 px-2 space-y-2"
-                >
-                  <label className="block text-xs font-bold text-gray-700">Nhập địa chỉ Gmail khác:</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="email"
-                      required
-                      value={customEmail}
-                      onChange={(e) => setCustomEmail(e.target.value)}
-                      placeholder="ten.ban@gmail.com"
-                      className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium focus:bg-white focus:outline-none focus:border-orange-500"
-                    />
-                    <button
-                      type="submit"
-                      className="px-4 py-2 bg-orange-500 text-white rounded-xl text-xs font-bold shrink-0 hover:bg-orange-600"
-                    >
-                      Xác thực & Tiếp tục
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                <button
-                  onClick={() => setShowCustomEmailInput(true)}
-                  className="w-full flex items-center gap-3.5 py-3.5 px-2 hover:bg-gray-50/80 rounded-xl transition-all text-left text-gray-800 hover:text-orange-600 font-bold text-xs"
-                >
-                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 border border-gray-200">
-                    👤
-                  </div>
-                  <span>Sử dụng một tài khoản khác</span>
-                </button>
-              )}
-            </div>
-
-            <p className="text-xs text-gray-500 leading-relaxed">
-              Trước khi sử dụng giftixa.com, bạn có thể xem <span className="text-indigo-600 font-bold hover:underline cursor-pointer">Chính sách quyền riêng tư</span> và <span className="text-indigo-600 font-bold hover:underline cursor-pointer">Điều khoản dịch vụ</span> của ứng dụng này.
-            </p>
-
-            <div className="flex items-center justify-between pt-2 text-xs text-gray-500 border-t border-gray-100">
-              <span className="cursor-pointer hover:underline">Tiếng Việt</span>
-              <div className="flex items-center gap-4">
-                <span className="cursor-pointer hover:underline">Trợ giúp</span>
-                <span className="cursor-pointer hover:underline">Quyền riêng tư</span>
-                <span className="cursor-pointer hover:underline">Điều khoản</span>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setShowGoogleModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl font-bold p-2"
-            >
-              ✕
-            </button>
-
-          </div>
-        </div>
-      )}
 
     </div>
   );
