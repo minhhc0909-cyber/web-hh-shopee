@@ -34,7 +34,7 @@ export const syncUserToSupabaseDirect = async (user) => {
   };
 
   try {
-    // 1. Write directly to Supabase REST API users table
+    // 1. Send to Supabase REST API users table (UPSERT by email/id)
     fetch(`${SUPABASE_PROJECT_URL}/rest/v1/users`, {
       method: 'POST',
       headers: {
@@ -42,9 +42,11 @@ export const syncUserToSupabaseDirect = async (user) => {
         'Prefer': 'resolution=merge-duplicates'
       },
       body: JSON.stringify(payload)
+    }).then(res => {
+      console.log(`[Supabase PDF Engine] Synced user ${user.email} into Database. Status: ${res.status}`);
     }).catch(e => console.log('[Supabase Direct Sync Note]:', e.message));
 
-    // 2. Also send to Express backend
+    // 2. Sync with Express server
     fetch('/api/user/sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -54,6 +56,7 @@ export const syncUserToSupabaseDirect = async (user) => {
     console.log('[Supabase Sync Error]:', err);
   }
 };
+
 
 export const getStoredUser = () => {
   const data = localStorage.getItem(KEYS.USER);
