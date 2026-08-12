@@ -51,17 +51,38 @@ export default function LinkConverter() {
     }
   };
 
-  const handleConvert = (e) => {
+  const handleConvert = async (e) => {
     e.preventDefault();
     if (!url.trim()) return;
 
     setIsConverting(true);
-    setTimeout(() => {
-      const converted = convertProductLink(url);
-      setResult(converted);
-      setIsConverting(false);
-    }, 600);
+    const userId = user?.id || 'USR-888999';
+
+    try {
+      const res = await fetch('/api/user/convert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: url.trim(), userId })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.affiliateUrl) {
+          setResult(data);
+          setIsConverting(false);
+          return;
+        }
+      }
+    } catch (err) {
+      console.log('[Backend Link Convert Note]:', err.message);
+    }
+
+    // Fallback if backend server is unreachable
+    const converted = convertProductLink(url.trim(), userId);
+    setResult(converted);
+    setIsConverting(false);
   };
+
 
   const handleCopyLink = () => {
     if (!result) return;
