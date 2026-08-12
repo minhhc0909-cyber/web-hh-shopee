@@ -1,3 +1,6 @@
+import chromium from '@sparticuz/chromium';
+import puppeteer from 'puppeteer-core';
+
 export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -76,17 +79,20 @@ export default async function handler(req, res) {
     // STEP 3 & 4: Call Shopee GraphQL API batchGetProductOfferLink
     let officialShopeeLink = null;
     if (shopId && itemId && lower.includes('shopee')) {
-      officialShopeeLink = await callShopeeGraphQL(shopId, itemId, rawSubId);
+      officialShopeeLink = await callShopeeGraphQLWithBrowser(shopId, itemId, rawSubId);
+      if (!officialShopeeLink) {
+        officialShopeeLink = await callShopeeGraphQL(shopId, itemId, rawSubId);
+      }
     }
 
-    // Use exact official productOfferLink returned directly by Shopee GraphQL API (e.g. https://s.shopee.vn/5FnttXIIbV)
+    // Format Official Shopee Universal Link using user Affiliate ID an_17349710562
     let affiliateUrl = officialShopeeLink;
     if (!affiliateUrl) {
       if (shopId && itemId) {
-        affiliateUrl = `https://shopee.vn/product/${shopId}/${itemId}?sub_id1=${rawSubId}&utm_source=shopee_affiliate`;
+        affiliateUrl = `https://shope.ee/an_link?mmp_pid=an_17349710562&url=https%3A%2F%2Fshopee.vn%2Fproduct%2F${shopId}%2F${itemId}&sub_id1=${rawSubId}`;
       } else {
         const separator = cleanUrl.includes('?') ? '&' : '?';
-        affiliateUrl = `${cleanUrl}${separator}sub_id1=${rawSubId}&utm_source=shopee_affiliate`;
+        affiliateUrl = `${cleanUrl}${separator}sub_id1=${rawSubId}&mmp_pid=an_17349710562`;
       }
     }
 
@@ -109,6 +115,62 @@ export default async function handler(req, res) {
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
+}
+
+// Method 2: Headless Browser Automation via Puppeteer
+async function callShopeeGraphQLWithBrowser(shopId, itemId, subId1) {
+  let browser = null;
+  try {
+    const executablePath = await chromium.executablePath();
+    browser = await puppeteer.launch({
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: executablePath || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+      headless: true
+    });
+
+    const page = await browser.newPage();
+    await page.setCookie(
+      { name: 'SPC_ST', value: 'AKDJUAer6YnA731xjZHIl6le2cpW9SZhQ6Ap+ts8dG9Qye0BtWkTdXEBafvt2avRqPcgOXmU1dIVZref1P4xQf5Vx87xliw3IpW754neKjuqFtRae9l0z3WhM7UsJ24iX0tgzhMudWBT8jcCtsMiiDEs6/X85k7QsFsmJKxmRmirM1uTcm86FDSlxUi4QbWWfbfJkZ1LfSPMwI2EookmBQ==.ALbdlBtAXhIuamI30bUMst8zbJiwRqt673JtKEdnhT2C', domain: '.shopee.vn' },
+      { name: 'SPC_U', value: '112054971', domain: '.shopee.vn' }
+    );
+
+    const link = await page.evaluate(async (sId, iId, sub1) => {
+      try {
+        const gqlUrl = 'https://affiliate.shopee.vn/api/v3/gql?q=productOfferLinks';
+        const payload = {
+          operationName: 'batchGetProductOfferLink',
+          query: 'query batchGetProductOfferLink($sourceCaller: SourceCaller!, $productOfferLinkParams: [ProductOfferLinkParam!]!, $advancedLinkParams: AdvancedLinkParams) { productOfferLinks(productOfferLinkParams: $productOfferLinkParams, sourceCaller: $sourceCaller, advancedLinkParams: $advancedLinkParams) { itemId shopId productOfferLink } }',
+          variables: {
+            productOfferLinkParams: [{ itemId: String(iId), shopId: Number(sId) }],
+            sourceCaller: 'WEB_SITE_CALLER',
+            advancedLinkParams: { subId1: String(sub1), subId2: '', subId3: '', subId4: '', subId5: '' }
+          }
+        };
+
+        const res = await fetch(gqlUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (data && data.data && data.data.productOfferLinks && data.data.productOfferLinks.length > 0) {
+          return data.data.productOfferLinks[0].productOfferLink;
+        }
+      } catch (err) {
+        return null;
+      }
+      return null;
+    }, shopId, itemId, subId1);
+
+    await browser.close();
+    if (link) return link;
+  } catch (err) {
+    if (browser) await browser.close();
+    console.log('[Puppeteer Browser Automation Note]:', err.message);
+  }
+  return null;
 }
 
 async function callShopeeGraphQL(shopId, itemId, subId1) {

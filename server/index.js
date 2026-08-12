@@ -247,14 +247,14 @@ app.post('/api/user/convert', async (req, res) => {
       officialShopeeLink = await callShopeeBatchGetProductOfferLink(shopId, itemId, rawSubId);
     }
 
-    // Format clean expanded product link if shortlink unshortened, eliminating raw input shortlink return
+    // Format Official Shopee Universal Link using user Affiliate ID an_17349710562
     let affiliateUrl = officialShopeeLink;
     if (!affiliateUrl) {
       if (shopId && itemId) {
-        affiliateUrl = `https://shopee.vn/product/${shopId}/${itemId}?sub_id1=${rawSubId}&utm_source=shopee_affiliate`;
+        affiliateUrl = `https://shope.ee/an_link?mmp_pid=an_17349710562&url=https%3A%2F%2Fshopee.vn%2Fproduct%2F${shopId}%2F${itemId}&sub_id1=${rawSubId}`;
       } else {
         const separator = cleanUrl.includes('?') ? '&' : '?';
-        affiliateUrl = `${cleanUrl}${separator}sub_id1=${rawSubId}&utm_source=shopee_affiliate`;
+        affiliateUrl = `${cleanUrl}${separator}sub_id1=${rawSubId}&mmp_pid=an_17349710562`;
       }
     }
 
@@ -272,6 +272,7 @@ app.post('/api/user/convert', async (req, res) => {
       estimatedCashback: 25000,
       estimatedCashbackAmount: 25000
     });
+
 
   } catch (err) {
     res.status(500).json({ error: err.message });
