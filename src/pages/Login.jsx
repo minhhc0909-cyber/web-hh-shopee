@@ -168,19 +168,25 @@ export default function Login({ setIsAdminMode }) {
     e.preventDefault();
     if (!emailInput.trim()) return;
 
-    const userMail = emailInput.trim();
-    const isAdmin = userMail.toLowerCase().includes('admin');
+    const userMail = emailInput.trim().toLowerCase();
+    const isAdmin = userMail.includes('admin');
 
     const loggedUser = registerUser({
-      name: userMail.split('@')[0],
+      name: isAdmin ? 'Quản Trị Viên (System Admin)' : userMail.split('@')[0],
       email: userMail,
       password: 'email_otp_login',
       pin: '123456'
     });
 
+    if (isAdmin) {
+      loggedUser.role = 'admin';
+      loggedUser.id = 'ADM-000001';
+      loggedUser.balance = 15400000;
+    }
+
     updateStoredUser(loggedUser);
     setIsAdminMode(isAdmin);
-    setStatusMsg(`✓ Đã gửi mã đăng nhập tới ${userMail}! Đang chuyển hướng...`);
+    setStatusMsg(`✓ XÁC THỰC QUYỀN ${isAdmin ? 'QUẢN TRỊ VIÊN (ADMIN)' : 'NGƯỜI DÙNG'} THÀNH CÔNG! Đang chuyển hướng...`);
 
     setTimeout(() => {
       if (isAdmin) {
@@ -188,8 +194,9 @@ export default function Login({ setIsAdminMode }) {
       } else {
         navigate('/dashboard');
       }
-    }, 800);
+    }, 600);
   };
+
 
   return (
     <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center p-0 sm:p-6 font-sans">
