@@ -34,13 +34,21 @@ export const syncUserToSupabaseDirect = async (user) => {
   };
 
   try {
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || localStorage.getItem('supabase_anon_key') || "";
+    const headers = {
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates'
+    };
+
+    if (supabaseKey) {
+      headers['apikey'] = supabaseKey;
+      headers['Authorization'] = `Bearer ${supabaseKey}`;
+    }
+
     // 1. Send to Supabase REST API users table (UPSERT by email/id)
     fetch(`${SUPABASE_PROJECT_URL}/rest/v1/users`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Prefer': 'resolution=merge-duplicates'
-      },
+      headers,
       body: JSON.stringify(payload)
     }).then(res => {
       console.log(`[Supabase PDF Engine] Synced user ${user.email} into Database. Status: ${res.status}`);
@@ -50,12 +58,13 @@ export const syncUserToSupabaseDirect = async (user) => {
     fetch('/api/user/sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(user)
+      body: JSON.stringify({ ...user, supabaseKey })
     }).catch(e => console.log('[Backend Sync Note]:', e.message));
   } catch (err) {
     console.log('[Supabase Sync Error]:', err);
   }
 };
+
 
 
 export const getStoredUser = () => {
