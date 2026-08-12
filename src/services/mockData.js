@@ -151,13 +151,15 @@ export const INITIAL_ADMIN_SESSIONS = [
   {
     id: "SESS-SHOPEE-PRIMARY",
     platform: "shopee",
-    accountName: "Shopee Affiliate Main Store",
+    accountName: "Shopee Affiliate Partner (User ID 112054971)",
     appKey: "1098471209384",
     appSecret: "sec_99481ab7c8e91023",
-    sessionCookieStatus: "active", // active, expired, warning
-    lastSynced: "2026-08-11 17:00",
+    cookie: "SPC_ST=AKDJUAer6YnA731xjZHIl6le2cpW9SZhQ6Ap+ts8dG9Qye0BtWkTdXEBafvt2avRqPcgOXmU1dIVZref1P4xQf5Vx87xliw3IpW754neKjuqFtRae9l0z3WhM7UsJ24iX0tgzhMudWBT8jcCtsMiiDEs6/X85k7QsFsmJKxmRmirM1uTcm86FDSlxUi4QbWWfbfJkZ1LfSPMwI2EookmBQ==; SPC_U=112054971; _sapid=68e101a641ae3ecc6dbccda4eeabd2e31331442ce2c5b243651c09e5; csrftoken=8MJysI57GWuv9v184wmFzvvQj8vEz00N",
+    sessionCookieStatus: "active",
+    lastSynced: "2026-08-12 20:41",
     totalOrdersSyncedToday: 142
   },
+
   {
     id: "SESS-TIKTOK-OFFICIAL",
     platform: "tiktok",
