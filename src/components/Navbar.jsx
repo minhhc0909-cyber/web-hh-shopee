@@ -148,11 +148,12 @@ export default function Navbar({ isAdminMode, setIsAdminMode }) {
                       <div className="flex items-center gap-1">
                         <span className="text-xs font-bold text-gray-800 block truncate max-w-[100px]">{user.name}</span>
                       </div>
-                      <span className={`text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded inline-block ${
-                        user.role === 'admin' ? 'bg-orange-500 text-white' : 'bg-emerald-100 text-emerald-800'
-                      }`}>
-                        {user.role === 'admin' ? 'ROLE: ADMIN' : 'ROLE: USER'}
-                      </span>
+                      {user.role === 'admin' && (
+                        <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded inline-block bg-orange-500 text-white">
+                          ROLE: ADMIN
+                        </span>
+                      )}
+
                     </div>
                   </div>
 
