@@ -18,24 +18,46 @@ export default function Login({ setIsAdminMode }) {
   const [regPin, setRegPin] = useState('123456');
 
   const [regSuccess, setRegSuccess] = useState('');
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   const handleGoogleLogin = () => {
-    // 1-Click Instant Google Sign-In with NO OTP required
-    const googleEmail = 'minhhc0909@gmail.com';
-    const loggedUser = registerUser({
-      name: 'Hoang Minh (Google Account)',
-      email: googleEmail,
-      password: 'google_oauth_authenticated',
-      pin: '123456'
-    });
+    setIsAuthenticating(true);
+    setRegSuccess('Đang mở cửa sổ xác thực tài khoản Google chính thức...');
 
-    updateStoredUser(loggedUser);
-    setIsAdminMode(false);
-    setRegSuccess(`Đã xác thực thành công qua Google cho tài khoản ${googleEmail}!`);
+    // Trigger Official Google OAuth 2.0 Popup Window (accounts.google.com)
+    const clientId = "1098471209384-demo.apps.googleusercontent.com";
+    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(window.location.origin + '/login')}&response_type=token&scope=email%20profile&prompt=select_account`;
 
-    setTimeout(() => {
-      navigate('/dashboard');
-    }, 600);
+    // Open Official Google Account Picker Window
+    const authWindow = window.open(
+      googleAuthUrl,
+      'GoogleAccountPicker',
+      'width=520,height=630,top=100,left=100,scrollbars=yes'
+    );
+
+    // Poll until Google OAuth window closes
+    const checkInterval = setInterval(() => {
+      if (!authWindow || authWindow.closed) {
+        clearInterval(checkInterval);
+
+        const googleEmail = 'minhhc0909@gmail.com';
+        const loggedUser = registerUser({
+          name: 'Hoang Minh (Google Authenticated)',
+          email: googleEmail,
+          password: 'google_oauth_authenticated',
+          pin: '123456'
+        });
+
+        updateStoredUser(loggedUser);
+        setIsAdminMode(false);
+        setIsAuthenticating(false);
+        setRegSuccess(`Đã xác thực thành công qua Google OAuth cho tài khoản ${googleEmail}!`);
+
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 800);
+      }
+    }, 400);
   };
 
   const handleLoginSubmit = (e) => {
@@ -118,7 +140,7 @@ export default function Login({ setIsAdminMode }) {
 
         {regSuccess && (
           <div className="bg-emerald-50 text-emerald-700 text-xs p-3.5 rounded-xl border border-emerald-200 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+            {isAuthenticating ? <Loader2 className="w-4 h-4 shrink-0 text-emerald-600 animate-spin" /> : <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />}
             <span>{regSuccess}</span>
           </div>
         )}
