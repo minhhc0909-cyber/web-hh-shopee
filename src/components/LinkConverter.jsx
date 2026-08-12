@@ -52,24 +52,54 @@ export default function LinkConverter() {
     }
   };
 
+  // Method 2: Client-Side Real Product Price Fetcher (Direct in User Browser)
+  const fetchRealPriceFromClient = async (shopId, itemId) => {
+    try {
+      if (!shopId || !itemId) return 0;
+      const res = await fetch(`https://shopee.vn/api/v4/item/get?itemid=${itemId}&shopid=${shopId}`, {
+        headers: { 'x-requested-with': 'XMLHttpRequest' }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.data && data.data.price) {
+          return Math.round(data.data.price / 100000);
+        }
+      }
+    } catch (err) {
+      console.log('[Client Price Fetch Note]:', err.message);
+    }
+    return 0;
+  };
+
   const handleConvert = async (e) => {
     e.preventDefault();
     if (!url.trim()) return;
 
     setIsConverting(true);
     const userId = user?.id || 'USR-888999';
-    const parsedPrice = Number(productPrice.replace(/[^0-9]/g, '')) || 0;
 
     try {
       const res = await fetch('/api/user/convert', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: url.trim(), userId, price: parsedPrice })
+        body: JSON.stringify({ url: url.trim(), userId })
       });
 
       if (res.ok) {
         const data = await res.json();
         if (data && data.affiliateUrl) {
+          // Attempt Method 2 Client-Side Real Price Extraction
+          if (data.shopId && data.itemId) {
+            const fetchedPrice = await fetchRealPriceFromClient(data.shopId, data.itemId);
+            if (fetchedPrice > 0) {
+              const shopeeComm = Math.min(fetchedPrice * 0.10, 20000);
+              const shopExtra = fetchedPrice * 0.05;
+              const totalComm = shopeeComm + shopExtra;
+              data.itemPrice = fetchedPrice;
+              data.estimatedCashback = Math.round(totalComm * 0.40);
+              data.estimatedCashbackAmount = data.estimatedCashback;
+            }
+          }
           setResult(data);
           setIsConverting(false);
           return;
@@ -80,10 +110,11 @@ export default function LinkConverter() {
     }
 
     // Fallback if backend server is unreachable
-    const converted = convertProductLink(url.trim(), userId, parsedPrice);
+    const converted = convertProductLink(url.trim(), userId);
     setResult(converted);
     setIsConverting(false);
   };
+
 
 
 
@@ -250,10 +281,14 @@ export default function LinkConverter() {
           <div className="flex flex-wrap items-center justify-between text-xs text-gray-600 pt-1">
             <div className="flex items-center gap-1.5">
               <Zap className="w-3.5 h-3.5 text-amber-500" />
-              <span>Ước tính nhận hoàn: <b className="text-orange-600 text-sm">~{(result.estimatedCashbackAmount || result.estimatedCashback || 25000).toLocaleString('vi-VN')} đ</b> (80% hoa hồng)</span>
+              <span>
+                Ước tính nhận hoàn: <b className="text-orange-600 text-sm">~{(result.estimatedCashbackAmount || result.estimatedCashback || 0).toLocaleString('vi-VN')} đ</b> (80% hoa hồng)
+                {result.itemPrice > 0 && <span className="ml-2 text-gray-500 font-mono text-[11px]">(Giá SP: {result.itemPrice.toLocaleString('vi-VN')} đ)</span>}
+              </span>
             </div>
             <span className="text-[11px] text-gray-400">Đơn hàng sẽ được ghi nhận vào hệ thống sau 5-15 phút</span>
           </div>
+
 
 
         </div>
