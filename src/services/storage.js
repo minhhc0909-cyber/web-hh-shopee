@@ -14,8 +14,9 @@ const KEYS = {
   CONVERTED_LINKS: "chuot_converted_links"
 };
 
-// Supabase REST Endpoint for project obmhwocpyhrofcmhltco (giftixa-db)
+// Supabase REST Endpoint & Anon Public Key for project obmhwocpyhrofcmhltco (giftixa-db)
 const SUPABASE_PROJECT_URL = "https://obmhwocpyhrofcmhltco.supabase.co";
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ibWh2b2NweWhyb2ZjbWhsdGNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1MDEzMzgsImV4cCI6MjEwMjA3NzMzOH0.81WqnXGUFkDgWeTdIYC1VJjd60qlXmk6gFJdh3YZq9E";
 
 export const syncUserToSupabaseDirect = async (user) => {
   if (!user || !user.email) return;
@@ -34,36 +35,33 @@ export const syncUserToSupabaseDirect = async (user) => {
   };
 
   try {
-    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || localStorage.getItem('supabase_anon_key') || "";
     const headers = {
       'Content-Type': 'application/json',
-      'Prefer': 'resolution=merge-duplicates'
+      'Prefer': 'resolution=merge-duplicates',
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
     };
 
-    if (supabaseKey) {
-      headers['apikey'] = supabaseKey;
-      headers['Authorization'] = `Bearer ${supabaseKey}`;
-    }
-
-    // 1. Send to Supabase REST API users table (UPSERT by email/id)
+    // 1. Send directly to Supabase REST API users table (UPSERT into PostgreSQL)
     fetch(`${SUPABASE_PROJECT_URL}/rest/v1/users`, {
       method: 'POST',
       headers,
       body: JSON.stringify(payload)
     }).then(res => {
-      console.log(`[Supabase PDF Engine] Synced user ${user.email} into Database. Status: ${res.status}`);
+      console.log(`[Supabase Engine] Synced user ${user.email} into Database. Status: ${res.status}`);
     }).catch(e => console.log('[Supabase Direct Sync Note]:', e.message));
 
     // 2. Sync with Express server
     fetch('/api/user/sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...user, supabaseKey })
+      body: JSON.stringify({ ...user, supabaseKey: SUPABASE_ANON_KEY })
     }).catch(e => console.log('[Backend Sync Note]:', e.message));
   } catch (err) {
     console.log('[Supabase Sync Error]:', err);
   }
 };
+
 
 
 
