@@ -1,9 +1,10 @@
 // Initial state mock database stored in LocalStorage for dynamic persistence
 
-export const INITIAL_USER = {
+export const SAMPLE_USER_ACCOUNT = {
   id: "USR-982341",
-  name: "Nguyễn Văn Hùng",
-  email: "vanhung.demo@gmail.com",
+  name: "Nguyễn Văn Hùng (Người Dùng)",
+  email: "user@chuot-hoantien.com",
+  password: "123456",
   role: "user", // "user" or "admin"
   avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
   balance: 450000,
@@ -21,6 +22,34 @@ export const INITIAL_USER = {
   referralEarnings: 320000
 };
 
+export const SAMPLE_ADMIN_ACCOUNT = {
+  id: "ADM-000001",
+  name: "Quản Trị Viên (System Admin)",
+  email: "admin@chuot-hoantien.com",
+  password: "admin123",
+  role: "admin", // "user" or "admin"
+  avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
+  balance: 15400000,
+  pendingBalance: 4200000,
+  totalCashback: 45000000,
+  withdrawalPin: "654321",
+  bankAccount: {
+    bankName: "Vietcombank",
+    bankCode: "VCB",
+    accountNumber: "10199887766",
+    accountName: "CHUOT HOAN TIEN SYSTEM"
+  },
+  referralCode: "ADMIN-MASTER",
+  referralsCount: 150,
+  referralEarnings: 15000000
+};
+
+export const INITIAL_USER = SAMPLE_USER_ACCOUNT;
+
+export const PRESET_ACCOUNTS = [
+  SAMPLE_USER_ACCOUNT,
+  SAMPLE_ADMIN_ACCOUNT
+];
 
 export const INITIAL_ORDERS = [
   {

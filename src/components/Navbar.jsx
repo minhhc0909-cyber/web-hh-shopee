@@ -119,18 +119,35 @@ export default function Navbar({ isAdminMode, setIsAdminMode }) {
               <span>{isAdminMode ? 'Thoát Admin' : 'Vào Admin'}</span>
             </button>
 
-            {/* User Profile Info */}
+            {/* User Profile & Account Role Switcher */}
             <div className="flex items-center gap-2 pl-2 border-l border-gray-200">
-              <img
-                src={user.avatar}
-                alt={user.name}
-                className="w-8 h-8 rounded-full border border-orange-300 object-cover"
-              />
-              <div className="text-left">
-                <span className="text-xs font-bold text-gray-800 block truncate max-w-[100px]">{user.name}</span>
-                <span className="text-[10px] text-gray-500 block">Thành viên VIP</span>
-              </div>
+              <Link to="/login" className="flex items-center gap-2 group">
+                <img
+                  src={user.avatar}
+                  alt={user.name}
+                  className="w-8 h-8 rounded-full border border-orange-300 object-cover group-hover:scale-105 transition-transform"
+                />
+                <div className="text-left">
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs font-bold text-gray-800 block truncate max-w-[100px]">{user.name}</span>
+                  </div>
+                  <span className={`text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded inline-block ${
+                    user.role === 'admin' ? 'bg-orange-500 text-white' : 'bg-emerald-100 text-emerald-800'
+                  }`}>
+                    {user.role === 'admin' ? 'ROLE: ADMIN' : 'ROLE: USER'}
+                  </span>
+                </div>
+              </Link>
+
+              <Link
+                to="/login"
+                className="p-1.5 text-gray-500 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                title="Đổi Tài Khoản / Đăng Nhập"
+              >
+                <LogOut className="w-4 h-4" />
+              </Link>
             </div>
+
 
           </div>
 

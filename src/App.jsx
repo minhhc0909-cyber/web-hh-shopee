@@ -18,6 +18,7 @@ import AdminReconciliation from './pages/Admin/AdminReconciliation';
 import AdminOrders from './pages/Admin/AdminOrders';
 import AdminWithdrawals from './pages/Admin/AdminWithdrawals';
 
+import Login from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 
 export default function App() {
@@ -34,11 +35,13 @@ export default function App() {
         <Routes>
           {/* User Routes */}
           <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login setIsAdminMode={setIsAdminMode} />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/withdrawal" element={<Withdrawal />} />
           <Route path="/referral" element={<Referral />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
+
 
           {/* Admin Routes - Protected by ProtectedRoute */}
           <Route path="/admin" element={
