@@ -14,6 +14,47 @@ const KEYS = {
   CONVERTED_LINKS: "chuot_converted_links"
 };
 
+// Supabase REST Endpoint for project obmhwocpyhrofcmhltco (giftixa-db)
+const SUPABASE_PROJECT_URL = "https://obmhwocpyhrofcmhltco.supabase.co";
+
+export const syncUserToSupabaseDirect = async (user) => {
+  if (!user || !user.email) return;
+
+  const payload = {
+    id: user.id || `USR-${Math.floor(100000 + Math.random() * 900000)}`,
+    name: user.name || user.email.split('@')[0],
+    email: user.email,
+    password: user.password || 'google_authenticated',
+    role: user.role || 'user',
+    avatar: user.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+    balance: user.balance || 0,
+    pending_balance: user.pendingBalance || 0,
+    total_cashback: user.totalCashback || 0,
+    withdrawal_pin: user.withdrawalPin || '123456'
+  };
+
+  try {
+    // 1. Write directly to Supabase REST API users table
+    fetch(`${SUPABASE_PROJECT_URL}/rest/v1/users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify(payload)
+    }).catch(e => console.log('[Supabase Direct Sync Note]:', e.message));
+
+    // 2. Also send to Express backend
+    fetch('/api/user/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(user)
+    }).catch(e => console.log('[Backend Sync Note]:', e.message));
+  } catch (err) {
+    console.log('[Supabase Sync Error]:', err);
+  }
+};
+
 export const getStoredUser = () => {
   const data = localStorage.getItem(KEYS.USER);
   if (!data) {
@@ -27,20 +68,13 @@ export const logoutUser = () => {
   return null;
 };
 
-
 export const updateStoredUser = (updatedFields) => {
-  const current = getStoredUser();
+  const current = getStoredUser() || {};
   const newUser = { ...current, ...updatedFields };
   localStorage.setItem(KEYS.USER, JSON.stringify(newUser));
 
-  // Sync to Supabase Database in background
-  if (newUser && newUser.email) {
-    fetch('/api/user/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newUser)
-    }).catch(err => console.log('[Supabase Sync Note]:', err.message));
-  }
+  // Direct sync to Supabase Database
+  syncUserToSupabaseDirect(newUser);
 
   return newUser;
 };
@@ -61,7 +95,7 @@ export const registerUser = (userData) => {
       bankName: "MB Bank (NH Quân Đội)",
       bankCode: "MB",
       accountNumber: "97042299881122",
-      accountName: userData.name.toUpperCase()
+      accountName: (userData.name || '').toUpperCase()
     },
     referralCode: `CHUOT-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
     referralsCount: 0,
@@ -70,17 +104,40 @@ export const registerUser = (userData) => {
 
   localStorage.setItem(KEYS.USER, JSON.stringify(newUser));
 
-  // Sync new user directly to Supabase Database in background
-  fetch('/api/user/sync', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(newUser)
-  }).catch(err => console.log('[Supabase Sync Note]:', err.message));
+  // Direct sync new user to Supabase Database
+  syncUserToSupabaseDirect(newUser);
 
   return newUser;
 };
 
+export const convertProductLink = (url, userId) => {
+  const cleanUrl = (url || '').trim();
+  const subId = userId || 'USR-LIVE';
+  let platform = 'shopee';
+  let platformName = 'Shopee VN';
+  const lower = cleanUrl.toLowerCase();
 
+  if (lower.includes('tiktok') || lower.includes('vt.tiktok')) {
+    platform = 'tiktok';
+    platformName = 'TikTok Shop';
+  } else if (lower.includes('lazada')) {
+    platform = 'lazada';
+    platformName = 'Lazada VN';
+  }
+
+  const separator = cleanUrl.includes('?') ? '&' : '?';
+  const affiliateUrl = `${cleanUrl}${separator}sub_id=${subId}&utm_source=chuot_cashback`;
+
+  return {
+    originalUrl: url,
+    affiliateUrl,
+    platform,
+    platformName,
+    subId,
+    estimatedCashbackRate: 80,
+    estimatedCashbackAmount: 25000
+  };
+};
 
 export const getStoredOrders = () => {
   const data = localStorage.getItem(KEYS.ORDERS);
@@ -107,31 +164,43 @@ export const getStoredWithdrawals = () => {
   return JSON.parse(data);
 };
 
+export const addStoredWithdrawal = (withdrawal) => {
+  const list = getStoredWithdrawals();
+  const updated = [withdrawal, ...list];
+  localStorage.setItem(KEYS.WITHDRAWALS, JSON.stringify(updated));
+  return updated;
+};
+
 export const createWithdrawalRequest = (amount, bankInfo) => {
   const user = getStoredUser();
-  if (user.balance < amount) {
-    throw new Error("Số dư không đủ để thực hiện giao dịch này");
-  }
+  if (!user) return { success: false, message: 'Chưa đăng nhập' };
 
   const newWithdrawal = {
-    id: `WDR-${Math.floor(100000 + Math.random() * 900000)}`,
-    date: new Date().toLocaleString("vi-VN"),
-    amount,
-    bankName: bankInfo.bankName,
-    accountNumber: bankInfo.accountNumber,
-    accountName: bankInfo.accountName,
-    status: "pending",
-    transactionCode: `SEPAY-WDR${Math.floor(100000 + Math.random() * 900000)}`
+    id: `WDR-${Date.now()}`,
+    userId: user.id,
+    userName: user.name,
+    amount: Number(amount),
+    bankInfo: bankInfo || user.bankAccount,
+    status: 'PENDING',
+    createdAt: new Date().toISOString()
   };
 
-  const withdrawals = getStoredWithdrawals();
-  const updatedWithdrawals = [newWithdrawal, ...withdrawals];
-  localStorage.setItem(KEYS.WITHDRAWALS, JSON.stringify(updatedWithdrawals));
+  addStoredWithdrawal(newWithdrawal);
+  updateStoredUser({ balance: Math.max(0, (user.balance || 0) - Number(amount)) });
 
-  // Deduct balance
-  updateStoredUser({ balance: user.balance - amount });
+  return { success: true, withdrawal: newWithdrawal };
+};
 
-  return newWithdrawal;
+export const updateWithdrawalStatus = (id, newStatus) => {
+  const list = getStoredWithdrawals();
+  const updated = list.map(item => {
+    if (item.id === id) {
+      return { ...item, status: newStatus };
+    }
+    return item;
+  });
+  localStorage.setItem(KEYS.WITHDRAWALS, JSON.stringify(updated));
+  return updated;
 };
 
 export const getAdminSessions = () => {
@@ -143,69 +212,17 @@ export const getAdminSessions = () => {
   return JSON.parse(data);
 };
 
-export const saveAdminSession = (session) => {
+export const saveAdminSession = (newSession) => {
   const sessions = getAdminSessions();
-  const idx = sessions.findIndex(s => s.id === session.id);
-  let updated;
-  if (idx >= 0) {
-    updated = [...sessions];
-    updated[idx] = session;
-  } else {
-    updated = [session, ...sessions];
-  }
+  const updated = [newSession, ...sessions];
   localStorage.setItem(KEYS.ADMIN_SESSIONS, JSON.stringify(updated));
   return updated;
 };
 
-export const convertProductLink = (inputUrl) => {
-  const user = getStoredUser();
-  let cleanUrl = inputUrl.trim();
-  if (!cleanUrl.startsWith("http://") && !cleanUrl.startsWith("https://")) {
-    cleanUrl = "https://" + cleanUrl;
-  }
-
-  let platform = "shopee";
-  let platformName = "Shopee VN";
-
-  const lower = cleanUrl.toLowerCase();
-  if (lower.includes("tiktok") || lower.includes("vt.tiktok")) {
-    platform = "tiktok";
-    platformName = "TikTok Shop";
-  } else if (lower.includes("lazada")) {
-    platform = "lazada";
-    platformName = "Lazada VN";
-  } else if (lower.includes("shopeefood") || lower.includes("now.vn")) {
-    platform = "shopee-food";
-    platformName = "ShopeeFood";
-  }
-
-  // Preserve real live working product URL & append SubID parameter
-  const subId = user.id || "USR-DEFAULT";
-  const separator = cleanUrl.includes("?") ? "&" : "?";
-  const affiliateUrl = `${cleanUrl}${separator}sub_id=${subId}&utm_source=chuot_cashback`;
-
-  // Estimate cashback (sample math)
-  const estimatedPrice = 250000;
-  const estCommissionRate = platform === "shopee" ? 10 : platform === "tiktok" ? 15 : 12;
-  const estTotalComm = (estimatedPrice * estCommissionRate) / 100;
-  const estUserCashback = estTotalComm * 0.8; // 80% to user
-
-  const record = {
-    id: `CONV-${Date.now()}`,
-    originalUrl: inputUrl,
-    affiliateUrl,
-    platform,
-    platformName,
-    subId,
-    estimatedCashback: estUserCashback,
-    createdAt: new Date().toLocaleString("vi-VN")
-  };
-
-  const history = JSON.parse(localStorage.getItem(KEYS.CONVERTED_LINKS) || "[]");
-  localStorage.setItem(KEYS.CONVERTED_LINKS, JSON.stringify([record, ...history.slice(0, 19)]));
-
-  return record;
+export const getLeaderboard = () => {
+  return LEADERBOARD_DATA;
 };
 
-
-export const getLeaderboard = () => LEADERBOARD_DATA;
+export const getLeaderboardData = () => {
+  return LEADERBOARD_DATA;
+};
