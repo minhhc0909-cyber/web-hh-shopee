@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Mail, Send, CheckCircle2, Loader2, KeyRound } from 'lucide-react';
+import { ArrowLeft, Mail, Lock, CheckCircle2, Loader2, KeyRound } from 'lucide-react';
 import { updateStoredUser, registerUser } from '../services/storage';
 
 export default function Login({ setIsAdminMode }) {
   const navigate = useNavigate();
   const [emailInput, setEmailInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
   const [statusMsg, setStatusMsg] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
 
@@ -125,45 +126,6 @@ export default function Login({ setIsAdminMode }) {
     }
   };
 
-
-  const handleNativeGooglePrompt = () => {
-    if (window.google && window.google.accounts) {
-      window.google.accounts.id.prompt();
-    } else {
-      setIsVerifying(true);
-      setStatusMsg('Đang kết nối cổng Google Identity Services...');
-
-      const googleWin = window.open(
-        `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent('https://www.giftixa.com/login')}&response_type=token&scope=email%20profile`,
-        'GoogleAccountChooserTab',
-        'width=520,height=640,top=100,left=100,scrollbars=yes'
-      );
-
-      const checkInterval = setInterval(() => {
-        if (!googleWin || googleWin.closed) {
-          clearInterval(checkInterval);
-
-          const googleEmail = 'minhhc0909@gmail.com';
-          const loggedUser = registerUser({
-            name: 'Hoang Minh (Google Verified)',
-            email: googleEmail,
-            password: 'google_oauth_authenticated',
-            pin: '123456'
-          });
-
-          updateStoredUser(loggedUser);
-          setIsAdminMode(false);
-          setIsVerifying(false);
-          setStatusMsg(`✓ Đã xác thực thành công qua Google OAuth cho ${googleEmail}!`);
-
-          setTimeout(() => {
-            navigate('/dashboard');
-          }, 600);
-        }
-      }, 400);
-    }
-  };
-
   const handleEmailSubmit = (e) => {
     e.preventDefault();
     if (!emailInput.trim()) return;
@@ -174,7 +136,7 @@ export default function Login({ setIsAdminMode }) {
     const loggedUser = registerUser({
       name: isAdmin ? 'Quản Trị Viên (System Admin)' : userMail.split('@')[0],
       email: userMail,
-      password: 'email_otp_login',
+      password: passwordInput || 'user_authenticated',
       pin: '123456'
     });
 
@@ -196,7 +158,6 @@ export default function Login({ setIsAdminMode }) {
       }
     }, 600);
   };
-
 
   return (
     <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center p-0 sm:p-6 font-sans">
@@ -227,7 +188,7 @@ export default function Login({ setIsAdminMode }) {
                 Đăng nhập một lần, theo dõi hoa hồng dễ hơn mỗi ngày.
               </h1>
               <p className="text-xs sm:text-sm text-orange-100 leading-relaxed">
-                Chỉ cần email để nhận mã OTP. Không cần mật khẩu, không mất thời gian làm quen lại từ đầu.
+                Đăng nhập dễ dàng bằng Email/Mật khẩu hoặc xác thực Google 1- chạm nhanh chóng.
               </p>
             </div>
           </div>
@@ -241,7 +202,7 @@ export default function Login({ setIsAdminMode }) {
           </div>
         </div>
 
-        {/* RIGHT COLUMN: LOGIN FORM WITH OFFICIAL GOOGLE NATIVE BUTTON */}
+        {/* RIGHT COLUMN: LOGIN FORM WITH SINGLE OFFICIAL GOOGLE BUTTON & PASSWORD FIELD */}
         <div className="md:w-7/12 p-8 sm:p-12 bg-white flex flex-col justify-between relative">
           
           <div className="flex items-center justify-between">
@@ -256,7 +217,7 @@ export default function Login({ setIsAdminMode }) {
             
             <div className="space-y-1">
               <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">Chào mừng bạn quay lại</h2>
-              <p className="text-xs text-gray-500">Đăng nhập nhanh bằng tài khoản Google Identity Services (OAuth 2.0).</p>
+              <p className="text-xs text-gray-500">Đăng nhập tài khoản bằng Email/Mật khẩu hoặc Google.</p>
             </div>
 
             {statusMsg && (
@@ -266,7 +227,7 @@ export default function Login({ setIsAdminMode }) {
               </div>
             )}
 
-            {/* Email OTP Login Form */}
+            {/* Email & Password Login Form */}
             <form onSubmit={handleEmailSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1.5">Địa chỉ email</label>
@@ -280,12 +241,26 @@ export default function Login({ setIsAdminMode }) {
                 />
               </div>
 
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-gray-700">Mật khẩu</label>
+                  <span className="text-[11px] font-bold text-orange-600 hover:underline cursor-pointer">Quên mật khẩu?</span>
+                </div>
+                <input
+                  type="password"
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  placeholder="Nhập mật khẩu của bạn..."
+                  className="w-full bg-gray-50/70 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium focus:bg-white focus:outline-none focus:border-orange-500 transition-all"
+                />
+              </div>
+
               <button
                 type="submit"
                 className="w-full py-3.5 bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-lg shadow-orange-500/25 transition-all flex items-center justify-center gap-2"
               >
                 <Mail className="w-4 h-4" />
-                <span>Gửi mã đăng nhập</span>
+                <span>Đăng Nhập / Gửi Mã OTP</span>
               </button>
             </form>
 
@@ -294,24 +269,9 @@ export default function Login({ setIsAdminMode }) {
               <span className="bg-white px-4 text-xs text-gray-400 font-medium uppercase absolute">hoặc</span>
             </div>
 
-            {/* REAL OFFICIAL GOOGLE NATIVE BUTTON CONTAINER */}
-            <div className="space-y-2">
+            {/* SINGLE REAL OFFICIAL GOOGLE NATIVE BUTTON CONTAINER */}
+            <div className="w-full flex justify-center py-1">
               <div id="google-official-btn-container" className="w-full min-h-[44px] flex justify-center"></div>
-
-              {/* Native Google Account Chooser Trigger Button */}
-              <button
-                type="button"
-                onClick={handleNativeGooglePrompt}
-                className="w-full py-3.5 px-4 bg-white hover:bg-gray-50 border border-gray-200 rounded-2xl text-xs sm:text-sm font-bold text-gray-700 transition-all flex items-center justify-center gap-3 shadow-xs hover:shadow-md"
-              >
-                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
-                  <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.29v3.15C3.26 21.3 7.31 24 12 24z"/>
-                  <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.29C.47 8.21 0 10.05 0 12s.47 3.79 1.29 5.42l3.99-3.15z"/>
-                  <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.94 1.19 15.23 0 12 0 7.31 0 3.26 2.7 1.29 6.58l3.99 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-                </svg>
-                <span>Đăng nhập bằng Google</span>
-              </button>
             </div>
 
           </div>
