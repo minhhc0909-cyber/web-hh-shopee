@@ -73,13 +73,13 @@ export default async function handler(req, res) {
       }
     }
 
-    // STEP 3 & 4: Call Shopee GraphQL API
+    // STEP 3 & 4: Call Shopee GraphQL API batchGetProductOfferLink
     let officialShopeeLink = null;
     if (shopId && itemId && lower.includes('shopee')) {
       officialShopeeLink = await callShopeeGraphQL(shopId, itemId, rawSubId);
     }
 
-    // Format clean expanded product link if shortlink unshortened, eliminating raw input shortlink return
+    // Use exact official productOfferLink returned directly by Shopee GraphQL API (e.g. https://s.shopee.vn/5FnttXIIbV)
     let affiliateUrl = officialShopeeLink;
     if (!affiliateUrl) {
       if (shopId && itemId) {
@@ -89,6 +89,7 @@ export default async function handler(req, res) {
         affiliateUrl = `${cleanUrl}${separator}sub_id1=${rawSubId}&utm_source=shopee_affiliate`;
       }
     }
+
 
     return res.status(200).json({
       originalUrl: url,
