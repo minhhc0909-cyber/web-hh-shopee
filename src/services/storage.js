@@ -123,7 +123,9 @@ export const registerUser = (userData) => {
 
 export const convertProductLink = (url, userId) => {
   const cleanUrl = (url || '').trim();
-  const subId = userId || 'USR-LIVE';
+  const rawId = userId || '888999';
+  const subId1 = rawId.replace(/[^0-9a-zA-Z]/g, '') || '888999';
+
   let platform = 'shopee';
   let platformName = 'Shopee VN';
   const lower = cleanUrl.toLowerCase();
@@ -136,20 +138,25 @@ export const convertProductLink = (url, userId) => {
     platformName = 'Lazada VN';
   }
 
+  // Format Shopee Affiliate Tracking Link with sub_id1 matching Shopee Console
   const separator = cleanUrl.includes('?') ? '&' : '?';
-  const affiliateUrl = `${cleanUrl}${separator}sub_id=${subId}&utm_source=chuot_cashback`;
+  const affiliateUrl = lower.includes('shopee')
+    ? `${cleanUrl}${separator}sub_id1=${subId1}&utm_source=shopee_affiliate`
+    : `${cleanUrl}${separator}sub_id=${subId1}&utm_source=chuot_cashback`;
 
   return {
     originalUrl: url,
     affiliateUrl,
     platform,
     platformName,
-    subId,
+    subId: subId1,
+    subId1: subId1,
     estimatedCashbackRate: 80,
     estimatedCashback: 25000,
     estimatedCashbackAmount: 25000
   };
 };
+
 
 
 export const getStoredOrders = () => {
