@@ -32,6 +32,16 @@ export const updateStoredUser = (updatedFields) => {
   const current = getStoredUser();
   const newUser = { ...current, ...updatedFields };
   localStorage.setItem(KEYS.USER, JSON.stringify(newUser));
+
+  // Sync to Supabase Database in background
+  if (newUser && newUser.email) {
+    fetch('/api/user/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newUser)
+    }).catch(err => console.log('[Supabase Sync Note]:', err.message));
+  }
+
   return newUser;
 };
 
@@ -59,8 +69,17 @@ export const registerUser = (userData) => {
   };
 
   localStorage.setItem(KEYS.USER, JSON.stringify(newUser));
+
+  // Sync new user directly to Supabase Database in background
+  fetch('/api/user/sync', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(newUser)
+  }).catch(err => console.log('[Supabase Sync Note]:', err.message));
+
   return newUser;
 };
+
 
 
 export const getStoredOrders = () => {

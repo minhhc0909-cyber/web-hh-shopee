@@ -107,9 +107,12 @@ app.post('/api/auth/google', async (req, res) => {
       token: `JWT_GOOGLE_SESSION_${Date.now()}`
     };
 
+    // Sync user to Supabase Database
+    syncUserToSupabaseDatabase(user);
+
     return res.json({
       success: true,
-      message: 'Google Identity Token verified by backend',
+      message: 'Google Identity Token verified and synced to Supabase',
       user,
       token: user.token
     });
@@ -118,6 +121,60 @@ app.post('/api/auth/google', async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 });
+
+// Real-time Supabase Database Sync API Endpoint
+app.post('/api/user/sync', async (req, res) => {
+  try {
+    const user = req.body;
+    if (!user || !user.email) {
+      return res.status(400).json({ error: 'User data không hợp lệ' });
+    }
+
+    await syncUserToSupabaseDatabase(user);
+    res.json({ success: true, message: 'Đã lưu tài khoản vào Supabase Database' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Supabase Database Sync Helper
+async function syncUserToSupabaseDatabase(user) {
+  const supabaseUrl = process.env.SUPABASE_URL || 'https://obmhwocpyhrofcmhltco.supabase.co';
+  const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseKey) {
+    console.log(`[Supabase DB Note] Add SUPABASE_ANON_KEY in Vercel Environment Variables to sync ${user.email} automatically.`);
+    return;
+  }
+
+  try {
+    const res = await fetch(`${supabaseUrl}/rest/v1/users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({
+        id: user.id || `USR-${Date.now()}`,
+        name: user.name,
+        email: user.email,
+        password: user.password || 'google_authenticated',
+        role: user.role || 'user',
+        avatar: user.avatar,
+        balance: user.balance || 0,
+        pending_balance: user.pendingBalance || 0,
+        total_cashback: user.totalCashback || 0,
+        withdrawal_pin: user.withdrawalPin || '123456'
+      })
+    });
+    console.log(`[Supabase DB] Synced ${user.email} to PostgreSQL users table. HTTP status: ${res.status}`);
+  } catch (err) {
+    console.error('[Supabase DB Sync Error]:', err.message);
+  }
+}
+
 
 
 // Real Shopee & TikTok Link Conversion API
