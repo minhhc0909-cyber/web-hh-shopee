@@ -247,11 +247,16 @@ app.post('/api/user/convert', async (req, res) => {
       officialShopeeLink = await callShopeeBatchGetProductOfferLink(shopId, itemId, rawSubId);
     }
 
-    // Fallback if GraphQL requires browser-specific token
-    const separator = cleanUrl.includes('?') ? '&' : '?';
-    const affiliateUrl = officialShopeeLink || (lower.includes('shopee')
-      ? `${cleanUrl}${separator}sub_id1=${rawSubId}&utm_source=shopee_affiliate`
-      : `${cleanUrl}${separator}sub_id=${rawSubId}&utm_source=chuot_cashback`);
+    // Format clean expanded product link if shortlink unshortened, eliminating raw input shortlink return
+    let affiliateUrl = officialShopeeLink;
+    if (!affiliateUrl) {
+      if (shopId && itemId) {
+        affiliateUrl = `https://shopee.vn/product/${shopId}/${itemId}?sub_id1=${rawSubId}&utm_source=shopee_affiliate`;
+      } else {
+        const separator = cleanUrl.includes('?') ? '&' : '?';
+        affiliateUrl = `${cleanUrl}${separator}sub_id1=${rawSubId}&utm_source=shopee_affiliate`;
+      }
+    }
 
     res.json({
       originalUrl: url,
@@ -267,6 +272,7 @@ app.post('/api/user/convert', async (req, res) => {
       estimatedCashback: 25000,
       estimatedCashbackAmount: 25000
     });
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -138,15 +138,36 @@ export const convertProductLink = (url, userId) => {
     platformName = 'Lazada VN';
   }
 
-  // Format valid, 100% working Shopee Affiliate link with sub_id1 parameter (Zero 404 errors)
+  // Parse shopId & itemId if present
+  let shopId = null;
+  let itemId = null;
+  const m1 = cleanUrl.match(/i\.(\d+)\.(\d+)/);
+  if (m1) {
+    shopId = m1[1];
+    itemId = m1[2];
+  } else {
+    const m2 = cleanUrl.match(/\/product\/(\d+)\/(\d+)/) || cleanUrl.match(/\/(\d+)\/(\d+)/);
+    if (m2) {
+      shopId = m2[1];
+      itemId = m2[2];
+    }
+  }
+
   const separator = cleanUrl.includes('?') ? '&' : '?';
-  const affiliateUrl = lower.includes('shopee')
+  let affiliateUrl = lower.includes('shopee')
     ? `${cleanUrl}${separator}sub_id1=${subId1}&utm_source=shopee_affiliate`
     : `${cleanUrl}${separator}sub_id=${subId1}&utm_source=chuot_cashback`;
+
+  if (shopId && itemId) {
+    affiliateUrl = `https://shopee.vn/product/${shopId}/${itemId}?sub_id1=${subId1}&utm_source=shopee_affiliate`;
+  }
 
   return {
     originalUrl: url,
     affiliateUrl,
+    resolvedUrl: cleanUrl,
+    shopId,
+    itemId,
     platform,
     platformName,
     subId: subId1,
@@ -156,6 +177,7 @@ export const convertProductLink = (url, userId) => {
     estimatedCashbackAmount: 25000
   };
 };
+
 
 
 
