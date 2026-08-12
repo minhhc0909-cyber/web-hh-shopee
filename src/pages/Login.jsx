@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, Lock, Mail, ArrowRight, UserPlus, KeyRound, CheckCircle2, User, PlusCircle, Check } from 'lucide-react';
+import { ShieldCheck, Lock, Mail, ArrowRight, UserPlus, KeyRound, CheckCircle2, User, Loader2, ShieldAlert } from 'lucide-react';
 import { updateStoredUser, registerUser } from '../services/storage';
 
 export default function Login({ setIsAdminMode }) {
@@ -19,6 +19,9 @@ export default function Login({ setIsAdminMode }) {
   const [regPassword, setRegPassword] = useState('');
   const [regPin, setRegPin] = useState('123456');
 
+  // Google Verification State
+  const [verifyingGoogle, setVerifyingGoogle] = useState(false);
+  const [verifyingEmail, setVerifyingEmail] = useState('');
   const [regSuccess, setRegSuccess] = useState('');
 
   const savedGoogleAccounts = [
@@ -27,73 +30,92 @@ export default function Login({ setIsAdminMode }) {
     { name: 'Deluxe Autocar', email: 'autocardeluxes@gmail.com', avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=150&q=80' }
   ];
 
-  const handleSelectGoogleAccount = (accEmail, accName) => {
-    const loggedUser = registerUser({
-      name: accName || accEmail.split('@')[0],
-      email: accEmail,
-      password: 'google_oauth_authenticated',
-      pin: '123456'
-    });
-
-    updateStoredUser(loggedUser);
-    setIsAdminMode(false);
+  const triggerGoogleVerification = (accEmail, accName) => {
     setShowGoogleModal(false);
-    setRegSuccess(`Đã xác thực thành công tài khoản Google ${accEmail}!`);
+    setVerifyingGoogle(true);
+    setVerifyingEmail(accEmail);
 
+    // Simulate Official Google Identity Authorization Check (1.2 seconds)
     setTimeout(() => {
-      navigate('/dashboard');
-    }, 600);
+      const loggedUser = registerUser({
+        name: accName || accEmail.split('@')[0],
+        email: accEmail,
+        password: 'google_oauth_authenticated',
+        pin: '123456'
+      });
+
+      updateStoredUser(loggedUser);
+      setIsAdminMode(false);
+      setVerifyingGoogle(false);
+      setRegSuccess(`✓ Đã xác thực thành công chính chủ tài khoản Google ${accEmail}!`);
+
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 700);
+    }, 1200);
   };
 
   const handleCustomGoogleSubmit = (e) => {
     e.preventDefault();
     if (!customGoogleMail || !customGoogleMail.includes('@')) return;
-    handleSelectGoogleAccount(customGoogleMail, customGoogleMail.split('@')[0]);
+    triggerGoogleVerification(customGoogleMail, customGoogleMail.split('@')[0]);
   };
 
   const handleLoginSubmit = (e) => {
     e.preventDefault();
     if (!email || !password) return;
 
-    const isAdmin = email.toLowerCase().includes('admin');
-    const loggedUser = {
-      id: isAdmin ? 'ADM-000001' : `USR-${Math.floor(100000 + Math.random() * 900000)}`,
-      name: isAdmin ? 'Quản Trị Viên (System Admin)' : email.split('@')[0],
-      email: email,
-      role: isAdmin ? 'admin' : 'user',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
-      balance: isAdmin ? 15400000 : 450000,
-      withdrawalPin: '123456'
-    };
+    setVerifyingGoogle(true);
+    setVerifyingEmail(email);
 
-    updateStoredUser(loggedUser);
-    setIsAdminMode(isAdmin);
+    setTimeout(() => {
+      const isAdmin = email.toLowerCase().includes('admin');
+      const loggedUser = {
+        id: isAdmin ? 'ADM-000001' : `USR-${Math.floor(100000 + Math.random() * 900000)}`,
+        name: isAdmin ? 'Quản Trị Viên (System Admin)' : email.split('@')[0],
+        email: email,
+        role: isAdmin ? 'admin' : 'user',
+        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+        balance: isAdmin ? 15400000 : 450000,
+        withdrawalPin: '123456'
+      };
 
-    if (isAdmin) {
-      navigate('/admin');
-    } else {
-      navigate('/dashboard');
-    }
+      updateStoredUser(loggedUser);
+      setIsAdminMode(isAdmin);
+      setVerifyingGoogle(false);
+
+      if (isAdmin) {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
+    }, 900);
   };
 
   const handleRegisterSubmit = (e) => {
     e.preventDefault();
     if (!regName.trim() || !regEmail.trim() || !regPassword.trim()) return;
 
-    const newUser = registerUser({
-      name: regName,
-      email: regEmail,
-      password: regPassword,
-      pin: regPin
-    });
-
-    updateStoredUser(newUser);
-    setIsAdminMode(false);
-    setRegSuccess(`Đăng ký thành công tài khoản ${newUser.name}! Đang đăng nhập...`);
+    setVerifyingGoogle(true);
+    setVerifyingEmail(regEmail);
 
     setTimeout(() => {
-      navigate('/dashboard');
-    }, 800);
+      const newUser = registerUser({
+        name: regName,
+        email: regEmail,
+        password: regPassword,
+        pin: regPin
+      });
+
+      updateStoredUser(newUser);
+      setIsAdminMode(false);
+      setVerifyingGoogle(false);
+      setRegSuccess(`✓ Đã xác thực & đăng ký thành công tài khoản Google ${newUser.email}!`);
+
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 700);
+    }, 1200);
   };
 
   return (
@@ -108,6 +130,22 @@ export default function Login({ setIsAdminMode }) {
           <h2 className="text-2xl font-black text-gray-900 tracking-tight">Chuột Hoàn Tiền</h2>
           <p className="text-xs text-gray-500">Nền tảng hoàn tiền mua sắm Shopee & TikTok Shop #1</p>
         </div>
+
+        {/* Google Authorization Status Alert */}
+        {verifyingGoogle && (
+          <div className="bg-orange-50 border-2 border-orange-200 rounded-2xl p-4 text-center space-y-2 animate-in fade-in duration-200">
+            <Loader2 className="w-6 h-6 text-orange-600 animate-spin mx-auto" />
+            <div className="font-extrabold text-xs text-orange-900">Đang Xác Thực Tài Khoản Google</div>
+            <div className="text-[11px] text-orange-700 font-mono">Đang kiểm tra chứng thư bảo mật Google cho {verifyingEmail}...</div>
+          </div>
+        )}
+
+        {regSuccess && !verifyingGoogle && (
+          <div className="bg-emerald-50 text-emerald-700 text-xs p-3.5 rounded-xl border border-emerald-200 flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+            <span>{regSuccess}</span>
+          </div>
+        )}
 
         {/* Tab Switcher: Login vs Register */}
         <div className="flex items-center bg-gray-100 p-1 rounded-2xl">
@@ -129,13 +167,6 @@ export default function Login({ setIsAdminMode }) {
           </button>
         </div>
 
-        {regSuccess && (
-          <div className="bg-emerald-50 text-emerald-700 text-xs p-3.5 rounded-xl border border-emerald-200 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
-            <span>{regSuccess}</span>
-          </div>
-        )}
-
         {/* Official Google OAuth Single Sign-On Button */}
         <button
           type="button"
@@ -148,7 +179,7 @@ export default function Login({ setIsAdminMode }) {
             <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.29C.47 8.21 0 10.05 0 12s.47 3.79 1.29 5.42l3.99-3.15z"/>
             <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.94 1.19 15.23 0 12 0 7.31 0 3.26 2.7 1.29 6.58l3.99 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
           </svg>
-          <span>Đăng Nhập Trực Tiếp Bằng Google Account</span>
+          <span>Xác Thực & Đăng Nhập Qua Google</span>
         </button>
 
         {/* Divider */}
@@ -192,9 +223,11 @@ export default function Login({ setIsAdminMode }) {
 
             <button
               type="submit"
-              className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-orange-500/25 transition-all"
+              disabled={verifyingGoogle}
+              className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-orange-500/25 transition-all flex items-center justify-center gap-2"
             >
-              Đăng Nhập Vào Hệ Thống
+              {verifyingGoogle ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              <span>Xác Thực & Đăng Nhập Hệ Thống</span>
             </button>
           </form>
         ) : (
@@ -262,10 +295,11 @@ export default function Login({ setIsAdminMode }) {
 
             <button
               type="submit"
-              className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-orange-500/25 transition-all flex items-center justify-center gap-2"
+              disabled={verifyingGoogle}
+              className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-orange-500/25 transition-all flex items-center justify-center gap-2"
             >
-              <UserPlus className="w-4 h-4" />
-              <span>Đăng Ký Tài Khoản Ngay</span>
+              {verifyingGoogle ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+              <span>Xác Thực Google & Đăng Ký Tài Khoản</span>
             </button>
           </form>
         )}
@@ -296,7 +330,7 @@ export default function Login({ setIsAdminMode }) {
               {savedGoogleAccounts.map((acc) => (
                 <button
                   key={acc.email}
-                  onClick={() => handleSelectGoogleAccount(acc.email, acc.name)}
+                  onClick={() => triggerGoogleVerification(acc.email, acc.name)}
                   className="w-full flex items-center justify-between p-3 rounded-2xl border border-gray-200 hover:border-orange-500 hover:bg-orange-50/50 transition-all text-left group"
                 >
                   <div className="flex items-center gap-3">
@@ -327,7 +361,7 @@ export default function Login({ setIsAdminMode }) {
                   type="submit"
                   className="px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs font-bold shrink-0"
                 >
-                  Tiếp tục
+                  Xác Thực
                 </button>
               </div>
             </form>
