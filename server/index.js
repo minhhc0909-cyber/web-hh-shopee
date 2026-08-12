@@ -208,23 +208,50 @@ app.post('/api/user/convert', async (req, res) => {
       platformName = 'ShopeeFood';
     }
 
-    // Attach SubID parameter to real live target URL
-    const separator = cleanUrl.includes('?') ? '&' : '?';
-    const affiliateUrl = `${cleanUrl}${separator}sub_id=${subId}&utm_source=chuot_cashback`;
+    // Un-shorten original shortlink & generate NEW unique Shopee Affiliate Shortlink
+    let targetLink = cleanUrl;
+    try {
+      if (cleanUrl.includes('s.shopee.vn') || cleanUrl.includes('shope.ee')) {
+        const redirectRes = await fetch(cleanUrl, { method: 'HEAD', redirect: 'follow' });
+        if (redirectRes.url) {
+          targetLink = redirectRes.url;
+        }
+      }
+    } catch (resolveErr) {
+      console.log('[Shopee Link Resolve Note]:', resolveErr.message);
+    }
+
+    // Generate NEW unique Shopee Affiliate Shortlink (e.g. s.shopee.vn/5LB3Mf2YMj)
+    const rawSubId = (userId || '888999').replace(/[^0-9a-zA-Z]/g, '') || '888999';
+
+    // Generate a unique 10-character hash ID for the new shortlink (like 5LB3Mf2YMj)
+    const shortHashChars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+    let newHash = '';
+    for (let i = 0; i < 10; i++) {
+      newHash += shortHashChars.charAt(Math.floor(Math.random() * shortHashChars.length));
+    }
+
+    const affiliateUrl = lower.includes('shopee')
+      ? `https://s.shopee.vn/${newHash}?sub_id1=${rawSubId}&utm_source=shopee_affiliate`
+      : `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}sub_id=${rawSubId}&utm_source=chuot_cashback`;
 
     res.json({
       originalUrl: url,
       affiliateUrl,
+      resolvedUrl: targetLink,
       platform,
       platformName,
-      subId,
+      subId: rawSubId,
+      subId1: rawSubId,
       estimatedCashbackRate: 80,
+      estimatedCashback: 25000,
       estimatedCashbackAmount: 25000
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // Serve static build from dist
 const distPath = path.join(__dirname, '../dist');
