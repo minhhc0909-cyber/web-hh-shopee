@@ -165,7 +165,7 @@ export default function LinkConverter() {
               {isConverting ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Đang tạo...</span>
+                  <span>Đang tạo & Quét giá...</span>
                 </>
               ) : (
                 <>
@@ -176,24 +176,9 @@ export default function LinkConverter() {
             </button>
 
           </div>
-
-          {/* Optional Price Input for 100% Exact Cashback Calculation */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <span className="text-xs font-bold text-gray-600 whitespace-nowrap">Giá sản phẩm (VNĐ):</span>
-              <input
-                type="text"
-                value={productPrice}
-                onChange={(e) => setProductPrice(e.target.value)}
-                placeholder="Ví dụ: 36.000 (Để tính hoàn tiền chính xác)"
-                className="w-full sm:w-64 bg-gray-50 border border-gray-200 focus:bg-white focus:border-orange-500 rounded-lg px-3 py-1.5 text-xs font-mono text-gray-900 outline-none transition-all"
-              />
-            </div>
-            <span className="text-[11px] text-gray-400">Công thức: Shopee 10% (tối đa 20k) + Shop 5% ➔ Hoàn 40% cho khách</span>
-          </div>
-
         </div>
       </form>
+
 
 
       {/* Conversion Result Box */}

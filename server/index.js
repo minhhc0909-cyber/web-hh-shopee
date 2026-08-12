@@ -243,6 +243,13 @@ app.post('/api/user/convert', async (req, res) => {
 
     console.log(`[Shopee 4-Step] Step 1 Expanded: ${expandedUrl} | Step 2 Parsed shopId: ${shopId}, itemId: ${itemId} | Step 3 subId1: ${rawSubId}`);
 
+    // STEP 2.5: Automatically fetch real product price from Shopee API
+    let itemPrice = Number(price) > 0 ? Number(price) : 0;
+    if (!itemPrice && shopId && itemId) {
+      itemPrice = await autoFetchShopeePrice(shopId, itemId, expandedUrl);
+    }
+    if (!itemPrice) itemPrice = 150000;
+
     // STEP 4: Call Shopee GraphQL API batchGetProductOfferLink
     let officialShopeeLink = null;
     if (shopId && itemId && lower.includes('shopee')) {
@@ -266,13 +273,13 @@ app.post('/api/user/convert', async (req, res) => {
     const totalCommission = shopeeCommission + shopCommission;
     const estimatedCashback = Math.round(totalCommission * 0.40); // Actual 40% cashback
 
-
     res.json({
       originalUrl: url,
       affiliateUrl,
       resolvedUrl: expandedUrl,
       shopId,
       itemId,
+      itemPrice,
       platform,
       platformName,
       subId: rawSubId,
@@ -284,6 +291,7 @@ app.post('/api/user/convert', async (req, res) => {
       shopCommission: Math.round(shopCommission),
       totalCommission: Math.round(totalCommission)
     });
+
 
 
 
@@ -377,6 +385,36 @@ async function generateRealShopeeAffiliateLink(originUrl, subId1, cookieString) 
 
   return null;
 }
+
+async function autoFetchShopeePrice(shopId, itemId, expandedUrl) {
+  try {
+    if (expandedUrl) {
+      const mPrice = expandedUrl.match(/price[^\d]*(\d+)/i) || expandedUrl.match(/amount[^\d]*(\d+)/i);
+      if (mPrice && Number(mPrice[1]) > 1000) {
+        let p = Number(mPrice[1]);
+        if (p > 10000000) p = Math.round(p / 100000);
+        return p;
+      }
+    }
+
+    if (shopId && itemId) {
+      const apiRes = await fetch(`https://shopee.vn/api/v4/item/get?itemid=${itemId}&shopid=${shopId}`, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          'Referer': `https://shopee.vn/product/${shopId}/${itemId}`
+        }
+      });
+      const data = await apiRes.json();
+      if (data && data.data && data.data.price) {
+        return Math.round(data.data.price / 100000);
+      }
+    }
+  } catch (err) {
+    console.log('[Auto Price Fetch Note]:', err.message);
+  }
+  return 150000;
+}
+
 
 
 
