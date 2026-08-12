@@ -146,9 +146,11 @@ export const convertProductLink = (url, userId) => {
     platformName,
     subId,
     estimatedCashbackRate: 80,
+    estimatedCashback: 25000,
     estimatedCashbackAmount: 25000
   };
 };
+
 
 export const getStoredOrders = () => {
   const data = localStorage.getItem(KEYS.ORDERS);

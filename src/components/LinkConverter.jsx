@@ -224,10 +224,11 @@ export default function LinkConverter() {
           <div className="flex flex-wrap items-center justify-between text-xs text-gray-600 pt-1">
             <div className="flex items-center gap-1.5">
               <Zap className="w-3.5 h-3.5 text-amber-500" />
-              <span>Ước tính nhận hoàn: <b className="text-orange-600 text-sm">~{result.estimatedCashback.toLocaleString('vi-VN')} đ</b> (80% hoa hồng)</span>
+              <span>Ước tính nhận hoàn: <b className="text-orange-600 text-sm">~{(result.estimatedCashbackAmount || result.estimatedCashback || 25000).toLocaleString('vi-VN')} đ</b> (80% hoa hồng)</span>
             </div>
             <span className="text-[11px] text-gray-400">Đơn hàng sẽ được ghi nhận vào hệ thống sau 5-15 phút</span>
           </div>
+
 
         </div>
       )}
