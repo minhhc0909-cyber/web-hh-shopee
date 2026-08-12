@@ -30,6 +30,34 @@ export const updateStoredUser = (updatedFields) => {
   return newUser;
 };
 
+export const registerUser = (userData) => {
+  const newUser = {
+    id: `USR-${Math.floor(100000 + Math.random() * 900000)}`,
+    name: userData.name,
+    email: userData.email,
+    password: userData.password,
+    role: "user",
+    avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
+    balance: 0,
+    pendingBalance: 0,
+    totalCashback: 0,
+    withdrawalPin: userData.pin || "123456",
+    bankAccount: {
+      bankName: "MB Bank (NH Quân Đội)",
+      bankCode: "MB",
+      accountNumber: "97042299881122",
+      accountName: userData.name.toUpperCase()
+    },
+    referralCode: `CHUOT-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
+    referralsCount: 0,
+    referralEarnings: 0
+  };
+
+  localStorage.setItem(KEYS.USER, JSON.stringify(newUser));
+  return newUser;
+};
+
+
 export const getStoredOrders = () => {
   const data = localStorage.getItem(KEYS.ORDERS);
   if (!data) {
