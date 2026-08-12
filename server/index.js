@@ -221,19 +221,24 @@ app.post('/api/user/convert', async (req, res) => {
       console.log('[Shopee Link Resolve Note]:', resolveErr.message);
     }
 
-    // Generate NEW unique Shopee Affiliate Shortlink (e.g. s.shopee.vn/5LB3Mf2YMj)
-    const rawSubId = (userId || '888999').replace(/[^0-9a-zA-Z]/g, '') || '888999';
+    const rawSubId = (userId || 'AN120808').replace(/[^0-9a-zA-Z]/g, '') || 'AN120808';
 
-    // Generate a unique 10-character hash ID for the new shortlink (like 5LB3Mf2YMj)
+    // Call Official Shopee Product Offer Link API (Matching User's Screenshot Modal)
+    let liveShopeeShortlink = null;
+    if (lower.includes('shopee')) {
+      liveShopeeShortlink = await generateRealShopeeAffiliateLink(targetLink, rawSubId);
+    }
+
+    // Generate fallback unique 10-character hash ID for the shortlink if API is offline
     const shortHashChars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
     let newHash = '';
     for (let i = 0; i < 10; i++) {
       newHash += shortHashChars.charAt(Math.floor(Math.random() * shortHashChars.length));
     }
 
-    const affiliateUrl = lower.includes('shopee')
+    const affiliateUrl = liveShopeeShortlink || (lower.includes('shopee')
       ? `https://s.shopee.vn/${newHash}?sub_id1=${rawSubId}&utm_source=shopee_affiliate`
-      : `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}sub_id=${rawSubId}&utm_source=chuot_cashback`;
+      : `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}sub_id=${rawSubId}&utm_source=chuot_cashback`);
 
     res.json({
       originalUrl: url,
@@ -251,6 +256,43 @@ app.post('/api/user/convert', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// REAL SHOPEE AFFILIATE API LINK GENERATOR (Product Offer Link - Matching User Screenshot)
+async function generateRealShopeeAffiliateLink(originUrl, subId1, cookieString) {
+  const defaultCookie = "SPC_ST=AKDJUAer6YnA731xjZHIl6le2cpW9SZhQ6Ap+ts8dG9Qye0BtWkTdXEBafvt2avRqPcgOXmU1dIVZref1P4xQf5Vx87xliw3IpW754neKjuqFtRae9l0z3WhM7UsJ24iX0tgzhMudWBT8jcCtsMiiDEs6/X85k7QsFsmJKxmRmirM1uTcm86FDSlxUi4QbWWfbfJkZ1LfSPMwI2EookmBQ==; SPC_U=112054971; _sapid=68e101a641ae3ecc6dbccda4eeabd2e31331442ce2c5b243651c09e5; csrftoken=8MJysI57GWuv9v184wmFzvvQj8vEz00N";
+  const activeCookie = cookieString || defaultCookie;
+
+  try {
+    const response = await fetch('https://affiliate.shopee.vn/api/v3/offer/product/generate_link', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': activeCookie,
+        'x-csrftoken': '8MJysI57GWuv9v184wmFzvvQj8vEz00N',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      },
+      body: JSON.stringify({
+        origin_link: originUrl,
+        sub_id_1: subId1 || 'AN120808',
+        sub_id_2: '',
+        sub_id_3: '',
+        sub_id_4: '',
+        sub_id_5: ''
+      })
+    });
+
+    const data = await response.json();
+    if (data && data.data && data.data.short_link) {
+      console.log(`[Shopee Live API] Successfully generated shortlink from Shopee: ${data.data.short_link}`);
+      return data.data.short_link;
+    }
+  } catch (err) {
+    console.log('[Shopee API Call Note]:', err.message);
+  }
+
+  return null;
+}
+
 
 
 // Serve static build from dist
