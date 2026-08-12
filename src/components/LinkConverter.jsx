@@ -87,7 +87,7 @@ export default function LinkConverter() {
             </span>
           </div>
           <p className="text-xs sm:text-sm text-gray-500 mt-1">
-            Dán link mua hàng Shopee, TikTok Shop hoặc Lazada để hệ thống tự tạo link chứa mã định danh <b>({user.id})</b>
+            Dán link mua hàng Shopee, TikTok Shop hoặc Lazada để hệ thống tự tạo link chứa mã định danh <b>({user?.id || 'GUEST'})</b>
           </p>
         </div>
 

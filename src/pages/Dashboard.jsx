@@ -25,9 +25,32 @@ export default function Dashboard() {
     setUser(getStoredUser());
   };
 
+  if (!user) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl p-8 max-w-md w-full border border-gray-200 text-center space-y-4 shadow-xl">
+          <div className="w-14 h-14 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center mx-auto text-2xl">
+            🐹
+          </div>
+          <h2 className="text-xl font-extrabold text-gray-900">Vui Lòng Đăng Nhập</h2>
+          <p className="text-xs text-gray-500">
+            Bạn cần đăng nhập hoặc tạo tài khoản mới để xem Bảng điều khiển số dư và đơn hàng hoàn tiền.
+          </p>
+          <Link
+            to="/login"
+            className="inline-flex items-center justify-center gap-2 w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-orange-500/25 transition-all"
+          >
+            Đăng Nhập Ngay
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const recentOrders = orders.slice(0, 4);
 
   return (
+
     <div className="space-y-6 pb-12">
       
       {/* User Welcome Banner */}
