@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Wallet, Landmark, ShieldCheck, History, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import { getStoredUser, getStoredWithdrawals, updateStoredUser } from '../services/storage';
 import WithdrawalModal from '../components/WithdrawalModal';
+import { Link } from 'react-router-dom';
 
 export default function Withdrawal() {
   const [user, setUser] = useState(getStoredUser());
@@ -9,10 +10,33 @@ export default function Withdrawal() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBank, setEditingBank] = useState(false);
 
+  if (!user) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl p-8 max-w-md w-full border border-gray-200 text-center space-y-4 shadow-xl">
+          <div className="w-14 h-14 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center mx-auto text-2xl">
+            🔒
+          </div>
+          <h2 className="text-xl font-extrabold text-gray-900">Vui Lòng Đăng Nhập</h2>
+          <p className="text-xs text-gray-500 leading-relaxed">
+            Tính năng Rút Tiền Ngân Hàng VietQR yêu cầu bạn Đăng Nhập hoặc Đăng Ký tài khoản để thực hiện giao dịch rút tiền.
+          </p>
+          <Link
+            to="/login"
+            className="inline-flex items-center justify-center gap-2 w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-orange-500/25 transition-all"
+          >
+            Đăng Nhập / Đăng Ký Ngay
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   // Bank Form State
-  const [bankName, setBankName] = useState(user.bankAccount.bankName);
-  const [accountNumber, setAccountNumber] = useState(user.bankAccount.accountNumber);
-  const [accountName, setAccountName] = useState(user.bankAccount.accountName);
+  const [bankName, setBankName] = useState(user.bankAccount?.bankName || '');
+  const [accountNumber, setAccountNumber] = useState(user.bankAccount?.accountNumber || '');
+  const [accountName, setAccountName] = useState(user.bankAccount?.accountName || '');
+
 
   const refreshData = () => {
     setUser(getStoredUser());

@@ -29,10 +29,16 @@ export default function Navbar({ isAdminMode, setIsAdminMode }) {
     window.location.href = '/login';
   };
 
-  const navLinks = [
+  const userNavLinks = [
     { path: '/', label: 'Chuyển Link', icon: Link2 },
     { path: '/orders', label: 'Đơn Hàng', icon: ShoppingBag },
     { path: '/withdrawal', label: 'Rút Tiền', icon: Wallet },
+    { path: '/referral', label: 'Giới Thiệu', icon: Users },
+    { path: '/leaderboard', label: 'BXH Top', icon: Trophy },
+  ];
+
+  const guestNavLinks = [
+    { path: '/', label: 'Chuyển Link', icon: Link2 },
     { path: '/referral', label: 'Giới Thiệu', icon: Users },
     { path: '/leaderboard', label: 'BXH Top', icon: Trophy },
   ];
@@ -45,7 +51,8 @@ export default function Navbar({ isAdminMode, setIsAdminMode }) {
     { path: '/admin/withdrawals', label: 'Duyệt Rút Tiền', icon: Wallet },
   ];
 
-  const activeLinks = isAdminMode ? adminNavLinks : navLinks;
+  const activeLinks = isAdminMode ? adminNavLinks : (user ? userNavLinks : guestNavLinks);
+
 
   return (
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-200 shadow-sm transition-all duration-200">
